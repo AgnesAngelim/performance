@@ -1,7 +1,3 @@
-/* =========================================
-   DADOS & CONFIGURAÇÃO
-   ========================================= */
-
 const AVCOLORS = [
   { bg: 'rgba(79,142,247,0.15)',  color: '#4f8ef7' },
   { bg: 'rgba(34,199,122,0.15)',  color: '#22c77a' },
@@ -209,21 +205,17 @@ function buildPanel(c) {
 }
 
 function buildWeekSelector(c, currentKey) {
-  const curWeek   = currentWeekKey();
-  const weeks     = Object.keys(c.weeks || {}).sort().reverse();
+  const curWeek = currentWeekKey();
+  const weeks   = Object.keys(c.weeks || {}).sort().reverse();
   if (!weeks.includes(curWeek)) weeks.unshift(curWeek);
-  const options   = weeks.map(w =>
+  const options = weeks.map(w =>
     `<option value="${w}" ${w === currentKey ? 'selected' : ''}>${w}${w === curWeek ? ' (atual)' : ''}</option>`
   ).join('');
-  const onCurrent = currentKey === curWeek;
-  const btnLabel  = onCurrent ? '✓ Semana atual' : '+ Ir para semana atual';
-  const btnStyle  = onCurrent ? 'opacity:0.5;cursor:default;' : '';
-  const btnAction = onCurrent ? '' : `onclick="createNewWeek(${c.id})"`;
   return `
     <div class="week-selector-row">
       <span class="week-label">📆 Semana:</span>
       <select class="week-select" onchange="switchWeek(${c.id}, this.value)">${options}</select>
-      <button class="new-week-btn" ${btnAction} style="${btnStyle}">${btnLabel}</button>
+      <button class="new-week-btn" onclick="createNewWeek(${c.id})">+ Nova semana</button>
     </div>
   `;
 }
@@ -260,12 +252,21 @@ function buildHeader(c, cl) {
           <div class="metas-label">metas batidas</div>
         </div>
       </div>
-      <button class="delete-panel-btn" onclick="confirmDelete(${c.id})">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-        </svg>
-        Excluir
-      </button>
+      <div class="header-actions">
+        <button class="edit-panel-btn" onclick="openEditModal(${c.id})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Editar
+        </button>
+        <button class="delete-panel-btn" onclick="confirmDelete(${c.id})">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+          Excluir
+        </button>
+      </div>
     </div>
   `;
 }
@@ -564,6 +565,52 @@ function saveObs(id) {
 }
 
 /* =========================================
+   EDITAR COLABORADOR
+   ========================================= */
+
+function openEditModal(id) {
+  const c = collabs.find(x => x.id === id);
+  document.getElementById('edit-modal-overlay').className = 'modal-overlay open';
+  document.getElementById('edit-inp-name').value    = c.name;
+  document.getElementById('edit-inp-role').value    = c.role;
+  document.getElementById('edit-inp-goal').value    = c.goal;
+  document.getElementById('edit-inp-strong').value  = c.strong.join(', ');
+  document.getElementById('edit-inp-metas').value   = c.metasBatidas ?? 0;
+  // convert dd/mm/yyyy to yyyy-mm-dd for date input
+  if (c.admissionDate) {
+    const [d, m, y] = c.admissionDate.split('/');
+    document.getElementById('edit-inp-admission').value = `${y}-${m}-${d}`;
+  } else {
+    document.getElementById('edit-inp-admission').value = '';
+  }
+  document.getElementById('edit-save-btn').onclick = () => saveEdit(id);
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal-overlay').className = 'modal-overlay';
+}
+
+function saveEdit(id) {
+  const c    = collabs.find(x => x.id === id);
+  const name = document.getElementById('edit-inp-name').value.trim();
+  if (!name) return;
+  const admDate = document.getElementById('edit-inp-admission').value;
+  let admFormatted = c.admissionDate;
+  if (admDate) { const [y, m, d] = admDate.split('-'); admFormatted = `${d}/${m}/${y}`; }
+
+  c.name         = name;
+  c.role         = document.getElementById('edit-inp-role').value.trim() || c.role;
+  c.goal         = document.getElementById('edit-inp-goal').value.trim() || c.goal;
+  c.strong       = document.getElementById('edit-inp-strong').value.split(',').map(s => s.trim()).filter(Boolean);
+  c.metasBatidas = parseInt(document.getElementById('edit-inp-metas').value) || 0;
+  c.admissionDate = admFormatted;
+  c.initials     = name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+
+  closeEditModal();
+  openDetail(id);
+}
+
+/* =========================================
    EXCLUIR COLABORADOR
    ========================================= */
 
@@ -635,5 +682,6 @@ function addCollab() {
 
 document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
 document.getElementById('delete-modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
+document.getElementById('edit-modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
 
 renderList();
