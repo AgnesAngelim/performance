@@ -10,56 +10,7 @@ const AVCOLORS = [
 let activeId   = null;
 let activeWeek = {};
 
-let collabs = [
-  {
-    id: 1, name: 'Ana Paula Silva', role: 'Analista de Atendimento',
-    initials: 'AP', colorIdx: 0, goal: 'Líder de equipe', score: 82,
-    metrics: { maxAtt: '47', tma: '4m 12s', tme: '1m 55s', avgDay: '23' },
-    admissionDate: '15/03/2023', metasBatidas: 8,
-    strong: ['Comunicação', 'Empatia com o cliente'],
-    difficulties: { 'Não compreender o processo': false, 'Dificuldade em finalizar': true, 'Agilidade': false, 'Complexidade': false, 'Falta de treinamento': false },
-    improvements: { 'Finalizações': true, 'Tempo de resposta': false, 'Avaliações': false, 'Forma de atender': false, 'Qualidade de atendimento': true },
-    steps: ['Treinamento em processos complexos','Acompanhamento semanal de métricas','Feedback mensal documentado'],
-    stepsChecked: [true, false, false],
-    systemImprove: 'Revisar fluxo de finalização de tickets e criar base de conhecimento interna.',
-    behaviors: { 'Atrasos': false, 'Procedimento incorreto': true, 'Desmotivação aparente': false },
-    burnout: { 'Foco': 2, 'Entrega no prazo': 1, 'Volume de tarefas': 1 },
-    observations: [{ date: '08/05/2025', text: 'Apresentou melhora no tempo de resposta. Ainda finaliza tickets de forma incompleta.', delta: 'up' }],
-    weeks: {},
-  },
-  {
-    id: 2, name: 'Carlos Mendes', role: 'Atendente Sênior',
-    initials: 'CM', colorIdx: 1, goal: 'Supervisor de Operações', score: 91,
-    metrics: { maxAtt: '63', tma: '3m 40s', tme: '1m 20s', avgDay: '31' },
-    admissionDate: '02/08/2021', metasBatidas: 21,
-    strong: ['Agilidade', 'Conhecimento técnico'],
-    difficulties: { 'Não compreender o processo': false, 'Dificuldade em finalizar': false, 'Agilidade': false, 'Complexidade': true, 'Falta de treinamento': false },
-    improvements: { 'Finalizações': false, 'Tempo de resposta': false, 'Avaliações': true, 'Forma de atender': false, 'Qualidade de atendimento': false },
-    steps: ['Shadowing com supervisor','Participar de reuniões estratégicas','Liderar uma reunião de equipe'],
-    stepsChecked: [true, true, false],
-    systemImprove: 'Acesso a relatórios gerenciais para treinar visão estratégica.',
-    behaviors: { 'Atrasos': false, 'Procedimento incorreto': false, 'Desmotivação aparente': false },
-    burnout: { 'Foco': 3, 'Entrega no prazo': 3, 'Volume de tarefas': 2 },
-    observations: [{ date: '08/05/2025', text: 'Excelente desempenho. Candidato natural para progressão de carreira.', delta: 'up' }],
-    weeks: {},
-  },
-  {
-    id: 3, name: 'Fernanda Rocha', role: 'Atendente Jr.',
-    initials: 'FR', colorIdx: 2, goal: 'Analista de Processos', score: 64,
-    metrics: { maxAtt: '29', tma: '6m 30s', tme: '2m 45s', avgDay: '14' },
-    admissionDate: '10/01/2024', metasBatidas: 2,
-    strong: ['Organização', 'Atenção a detalhes'],
-    difficulties: { 'Não compreender o processo': true, 'Dificuldade em finalizar': true, 'Agilidade': true, 'Complexidade': false, 'Falta de treinamento': true },
-    improvements: { 'Finalizações': true, 'Tempo de resposta': true, 'Avaliações': false, 'Forma de atender': true, 'Qualidade de atendimento': false },
-    steps: ['Treinamento completo de processos','Mentoria com colega sênior','Meta diária de atendimentos'],
-    stepsChecked: [false, false, false],
-    systemImprove: 'Criar roteiro passo a passo para atendimentos complexos.',
-    behaviors: { 'Atrasos': true, 'Procedimento incorreto': true, 'Desmotivação aparente': false },
-    burnout: { 'Foco': 1, 'Entrega no prazo': 1, 'Volume de tarefas': 1 },
-    observations: [{ date: '08/05/2025', text: 'Necessita de suporte mais próximo. Mostra interesse mas tem gaps de conhecimento.', delta: 'same' }],
-    weeks: {},
-  },
-];
+let collabs = [];
 
 /* =========================================
    UTILITÁRIOS
@@ -252,21 +203,12 @@ function buildHeader(c, cl) {
           <div class="metas-label">metas batidas</div>
         </div>
       </div>
-      <div class="header-actions">
-        <button class="edit-panel-btn" onclick="openEditModal(${c.id})">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-          Editar
-        </button>
-        <button class="delete-panel-btn" onclick="confirmDelete(${c.id})">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-          </svg>
-          Excluir
-        </button>
-      </div>
+      <button class="delete-panel-btn" onclick="confirmDelete(${c.id})">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+        </svg>
+        Excluir
+      </button>
     </div>
   `;
 }
@@ -565,52 +507,6 @@ function saveObs(id) {
 }
 
 /* =========================================
-   EDITAR COLABORADOR
-   ========================================= */
-
-function openEditModal(id) {
-  const c = collabs.find(x => x.id === id);
-  document.getElementById('edit-modal-overlay').className = 'modal-overlay open';
-  document.getElementById('edit-inp-name').value    = c.name;
-  document.getElementById('edit-inp-role').value    = c.role;
-  document.getElementById('edit-inp-goal').value    = c.goal;
-  document.getElementById('edit-inp-strong').value  = c.strong.join(', ');
-  document.getElementById('edit-inp-metas').value   = c.metasBatidas ?? 0;
-  // convert dd/mm/yyyy to yyyy-mm-dd for date input
-  if (c.admissionDate) {
-    const [d, m, y] = c.admissionDate.split('/');
-    document.getElementById('edit-inp-admission').value = `${y}-${m}-${d}`;
-  } else {
-    document.getElementById('edit-inp-admission').value = '';
-  }
-  document.getElementById('edit-save-btn').onclick = () => saveEdit(id);
-}
-
-function closeEditModal() {
-  document.getElementById('edit-modal-overlay').className = 'modal-overlay';
-}
-
-function saveEdit(id) {
-  const c    = collabs.find(x => x.id === id);
-  const name = document.getElementById('edit-inp-name').value.trim();
-  if (!name) return;
-  const admDate = document.getElementById('edit-inp-admission').value;
-  let admFormatted = c.admissionDate;
-  if (admDate) { const [y, m, d] = admDate.split('-'); admFormatted = `${d}/${m}/${y}`; }
-
-  c.name         = name;
-  c.role         = document.getElementById('edit-inp-role').value.trim() || c.role;
-  c.goal         = document.getElementById('edit-inp-goal').value.trim() || c.goal;
-  c.strong       = document.getElementById('edit-inp-strong').value.split(',').map(s => s.trim()).filter(Boolean);
-  c.metasBatidas = parseInt(document.getElementById('edit-inp-metas').value) || 0;
-  c.admissionDate = admFormatted;
-  c.initials     = name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-
-  closeEditModal();
-  openDetail(id);
-}
-
-/* =========================================
    EXCLUIR COLABORADOR
    ========================================= */
 
@@ -682,6 +578,5 @@ function addCollab() {
 
 document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
 document.getElementById('delete-modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
-document.getElementById('edit-modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
 
 renderList();
