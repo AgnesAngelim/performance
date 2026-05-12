@@ -1,3 +1,7 @@
+/* =========================================
+   DADOS & CONFIGURAÇÃO
+   ========================================= */
+
 const AVCOLORS = [
   { bg: 'rgba(79,142,247,0.15)',  color: '#4f8ef7' },
   { bg: 'rgba(34,199,122,0.15)',  color: '#22c77a' },
@@ -10,7 +14,56 @@ const AVCOLORS = [
 let activeId   = null;
 let activeWeek = {};
 
-let collabs = [];
+let collabs = [
+  {
+    id: 1, name: 'Ana Paula Silva', role: 'Analista de Atendimento',
+    initials: 'AP', colorIdx: 0, goal: 'Líder de equipe', score: 82,
+    metrics: { maxAtt: '47', tma: '4m 12s', tme: '1m 55s', avgDay: '23' },
+    admissionDate: '15/03/2023', metasBatidas: 8,
+    strong: ['Comunicação', 'Empatia com o cliente'],
+    difficulties: { 'Não compreender o processo': false, 'Dificuldade em finalizar': true, 'Agilidade': false, 'Complexidade': false, 'Falta de treinamento': false },
+    improvements: { 'Finalizações': true, 'Tempo de resposta': false, 'Avaliações': false, 'Forma de atender': false, 'Qualidade de atendimento': true },
+    steps: ['Treinamento em processos complexos','Acompanhamento semanal de métricas','Feedback mensal documentado'],
+    stepsChecked: [true, false, false],
+    systemImprove: 'Revisar fluxo de finalização de tickets e criar base de conhecimento interna.',
+    behaviors: { 'Atrasos': false, 'Procedimento incorreto': true, 'Desmotivação aparente': false },
+    burnout: { 'Foco': 2, 'Entrega no prazo': 1, 'Volume de tarefas': 1 },
+    observations: [{ date: '08/05/2025', text: 'Apresentou melhora no tempo de resposta. Ainda finaliza tickets de forma incompleta.', delta: 'up' }],
+    weeks: {},
+  },
+  {
+    id: 2, name: 'Carlos Mendes', role: 'Atendente Sênior',
+    initials: 'CM', colorIdx: 1, goal: 'Supervisor de Operações', score: 91,
+    metrics: { maxAtt: '63', tma: '3m 40s', tme: '1m 20s', avgDay: '31' },
+    admissionDate: '02/08/2021', metasBatidas: 21,
+    strong: ['Agilidade', 'Conhecimento técnico'],
+    difficulties: { 'Não compreender o processo': false, 'Dificuldade em finalizar': false, 'Agilidade': false, 'Complexidade': true, 'Falta de treinamento': false },
+    improvements: { 'Finalizações': false, 'Tempo de resposta': false, 'Avaliações': true, 'Forma de atender': false, 'Qualidade de atendimento': false },
+    steps: ['Shadowing com supervisor','Participar de reuniões estratégicas','Liderar uma reunião de equipe'],
+    stepsChecked: [true, true, false],
+    systemImprove: 'Acesso a relatórios gerenciais para treinar visão estratégica.',
+    behaviors: { 'Atrasos': false, 'Procedimento incorreto': false, 'Desmotivação aparente': false },
+    burnout: { 'Foco': 3, 'Entrega no prazo': 3, 'Volume de tarefas': 2 },
+    observations: [{ date: '08/05/2025', text: 'Excelente desempenho. Candidato natural para progressão de carreira.', delta: 'up' }],
+    weeks: {},
+  },
+  {
+    id: 3, name: 'Fernanda Rocha', role: 'Atendente Jr.',
+    initials: 'FR', colorIdx: 2, goal: 'Analista de Processos', score: 64,
+    metrics: { maxAtt: '29', tma: '6m 30s', tme: '2m 45s', avgDay: '14' },
+    admissionDate: '10/01/2024', metasBatidas: 2,
+    strong: ['Organização', 'Atenção a detalhes'],
+    difficulties: { 'Não compreender o processo': true, 'Dificuldade em finalizar': true, 'Agilidade': true, 'Complexidade': false, 'Falta de treinamento': true },
+    improvements: { 'Finalizações': true, 'Tempo de resposta': true, 'Avaliações': false, 'Forma de atender': true, 'Qualidade de atendimento': false },
+    steps: ['Treinamento completo de processos','Mentoria com colega sênior','Meta diária de atendimentos'],
+    stepsChecked: [false, false, false],
+    systemImprove: 'Criar roteiro passo a passo para atendimentos complexos.',
+    behaviors: { 'Atrasos': true, 'Procedimento incorreto': true, 'Desmotivação aparente': false },
+    burnout: { 'Foco': 1, 'Entrega no prazo': 1, 'Volume de tarefas': 1 },
+    observations: [{ date: '08/05/2025', text: 'Necessita de suporte mais próximo. Mostra interesse mas tem gaps de conhecimento.', delta: 'same' }],
+    weeks: {},
+  },
+];
 
 /* =========================================
    UTILITÁRIOS
@@ -22,6 +75,15 @@ function scoreColor(s) { return s >= 80 ? '#22c77a' : s >= 65 ? '#f5a623' : '#f4
 function today() {
   const n = new Date();
   return `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`;
+}
+
+
+/* =========================================
+   PERSISTÊNCIA — localStorage
+   ========================================= */
+
+function saveData() {
+  try { localStorage.setItem('pdi_collabs', JSON.stringify(collabs)); } catch(e) {}
 }
 
 /* =========================================
@@ -126,6 +188,7 @@ function openDetail(id) {
   const cls  = isNew ? 'panel-content slide-in' : 'panel-content';
   main.innerHTML = `<div class="${cls}" id="pc-${id}">${buildPanel(c)}</div>`;
   renderList(document.getElementById('search-input').value);
+  saveData();
 }
 
 function buildPanel(c) {
@@ -421,8 +484,8 @@ function buildObsCard(c) {
    AÇÕES — MÉTRICAS / CAMPOS
    ========================================= */
 
-function saveMetric(id, field, val) { collabs.find(x => x.id === id).metrics[field] = val; }
-function saveField(id, field, val)  { collabs.find(x => x.id === id)[field] = val; }
+function saveMetric(id, field, val) { collabs.find(x => x.id === id).metrics[field] = val; saveData(); }
+function saveField(id, field, val)  { collabs.find(x => x.id === id)[field] = val; saveData(); }
 
 /* =========================================
    AÇÕES — CHECKLIST
@@ -535,6 +598,7 @@ function deleteCollab(id) {
     `;
   }
   renderList(document.getElementById('search-input').value);
+  saveData();
 }
 
 /* =========================================
@@ -570,6 +634,7 @@ function addCollab() {
   closeModal();
   ['inp-name','inp-role','inp-goal','inp-strong','inp-admission','inp-metas'].forEach(id => { document.getElementById(id).value = ''; });
   renderList();
+  saveData();
 }
 
 /* =========================================
