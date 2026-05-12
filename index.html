@@ -103,6 +103,46 @@
   </div>
 </div>
 
+
+<!-- MODAL — Editar Colaborador -->
+<div class="modal-overlay" id="edit-modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">✏️ Editar Colaborador</div>
+
+    <div class="field">
+      <label for="edit-inp-name">Nome completo</label>
+      <input id="edit-inp-name" placeholder="Ex: Ana Paula Silva" />
+    </div>
+    <div class="field">
+      <label for="edit-inp-role">Cargo / função</label>
+      <input id="edit-inp-role" placeholder="Ex: Analista de Atendimento" />
+    </div>
+    <div class="field">
+      <label for="edit-inp-goal">Objetivo profissional</label>
+      <input id="edit-inp-goal" placeholder="Ex: Líder de equipe" />
+    </div>
+    <div class="field">
+      <label for="edit-inp-strong">Pontos fortes (separados por vírgula)</label>
+      <input id="edit-inp-strong" placeholder="Ex: Comunicação, Empatia" />
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="edit-inp-admission">Data de admissão</label>
+        <input id="edit-inp-admission" type="date" />
+      </div>
+      <div class="field">
+        <label for="edit-inp-metas">Metas batidas</label>
+        <input id="edit-inp-metas" type="number" min="0" placeholder="Ex: 12" />
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeEditModal()">Cancelar</button>
+      <button class="save-btn" id="edit-save-btn">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 <script>
   function toggleSidebar() {
