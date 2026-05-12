@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ranking de Performance</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand"><span>Performance</span></div>
+      <div class="brand-sub">Análise individual de crescimento</div>
+      <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="sidebar-search">
+      <input
+        class="search-input"
+        id="search-input"
+        placeholder="🔍  Buscar colaborador..."
+        oninput="filterList(this.value)"
+      />
+    </div>
+    <div class="collab-list" id="collab-list"></div>
+    <button class="add-btn" onclick="openModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Novo Colaborador
+    </button>
+  </aside>
+
+  <!-- PAINEL PRINCIPAL -->
+  <main class="main" id="main-panel">
+    <div class="empty-state">
+      <div class="empty-icon">👥</div>
+      <h3>Selecione um colaborador</h3>
+      <p>Clique em um nome na lista ao lado para ver o perfil completo de performance e PDI.</p>
+    </div>
+  </main>
+
+</div>
+
+<!-- MODAL — Novo Colaborador -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">Novo Colaborador</div>
+
+    <div class="field">
+      <label for="inp-name">Nome completo</label>
+      <input id="inp-name" placeholder="Ex: Ana Paula Silva" />
+    </div>
+    <div class="field">
+      <label for="inp-role">Cargo / função</label>
+      <input id="inp-role" placeholder="Ex: Analista de Atendimento" />
+    </div>
+    <div class="field">
+      <label for="inp-goal">Objetivo profissional</label>
+      <input id="inp-goal" placeholder="Ex: Líder de equipe" />
+    </div>
+    <div class="field">
+      <label for="inp-strong">Pontos fortes (separados por vírgula)</label>
+      <input id="inp-strong" placeholder="Ex: Comunicação, Empatia" />
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="inp-admission">Data de admissão</label>
+        <input id="inp-admission" type="date" />
+      </div>
+      <div class="field">
+        <label for="inp-metas">Metas batidas</label>
+        <input id="inp-metas" type="number" min="0" placeholder="Ex: 12" />
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeModal()">Cancelar</button>
+      <button class="save-btn" onclick="addCollab()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL — Confirmar Exclusão -->
+<div class="modal-overlay" id="delete-modal-overlay">
+  <div class="modal-box" style="width:340px">
+    <div class="modal-title" style="color:var(--red)">⚠️ Excluir colaborador</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">
+      Tem certeza que deseja excluir <strong id="delete-modal-name" style="color:var(--text)"></strong>?<br/>
+      <span style="color:var(--text3);font-size:12px">Essa ação não pode ser desfeita.</span>
+    </p>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="save-btn" id="confirm-delete-btn" style="background:var(--red)">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  function toggleSidebar() {
+    document.querySelector('.sidebar').classList.toggle('collapsed');
+  }
+  // Auto-collapse sidebar when a collab is selected on mobile
+  const _origOpenDetail = openDetail;
+  openDetail = function(id) {
+    _origOpenDetail(id);
+    if (window.innerWidth <= 768) {
+      document.querySelector('.sidebar').classList.add('collapsed');
+    }
+  };
+</script>
+</body>
+</html>
