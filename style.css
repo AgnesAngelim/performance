@@ -1,6 +1,3 @@
-/* =========================================
-   VARIÁVEIS GLOBAIS
-   ========================================= */
 :root {
   --bg:        #0f1117;
   --bg2:       #161922;
@@ -1149,67 +1146,46 @@ input[type="number"]:focus { border-color: var(--accent); }
   margin-bottom: 16px;
 }
 /* =========================================================
-   ADICIONAR TAGS / COMPORTAMENTOS / PRODUTIVIDADE
+   BOTÃO EDITAR — HEADER
    ========================================================= */
-.tag-add-row {
+.header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
+  margin-left: 12px;
+  flex-shrink: 0;
 }
-.tag-input {
-  flex: 1;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 7px 12px;
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.tag-input:focus { border-color: var(--accent); }
-.tag-input::placeholder { color: var(--text3); }
-.tag-add-btn {
-  background: var(--accent);
-  border: none;
-  border-radius: 8px;
-  width: 30px;
-  height: 30px;
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
+
+.edit-panel-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: opacity 0.15s;
-  line-height: 1;
-}
-.tag-add-btn:hover { opacity: 0.85; }
-.tag-remove {
-  margin-left: 5px;
-  font-size: 13px;
-  opacity: 0.5;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.tag-remove:hover { opacity: 1; }
-.behavior-remove {
-  margin-left: auto;
-  font-size: 14px;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 7px 14px;
   color: var(--text3);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  padding: 0 4px;
-  opacity: 0.5;
-  transition: opacity 0.15s;
+  transition: all 0.15s;
+  white-space: nowrap;
 }
-.behavior-remove:hover { opacity: 1; color: var(--red); }
-.burnout-row { align-items: center; }
+
+.edit-panel-btn:hover {
+  background: rgba(79,142,247,0.1);
+  border-color: rgba(79,142,247,0.4);
+  color: #4f8ef7;
+}
 
 /* =========================================================
-   SELETOR DE SEMANA
+   ANIMAÇÃO
+   ========================================================= */
+.slide-in { animation: slideIn 0.25s ease; }
+
+/* =========================================================
+   SEMANA
    ========================================================= */
 .week-selector-row {
   display: flex;
@@ -1272,6 +1248,61 @@ input[type="number"]:focus { border-color: var(--accent); }
 }
 
 /* =========================================================
-   ANIMAÇÃO
+   TAGS / COMPORTAMENTO / PRODUTIVIDADE — ADICIONAR
    ========================================================= */
-.slide-in { animation: slideIn 0.25s ease; }
+.tag-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.tag-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.tag-input:focus { border-color: var(--accent); }
+.tag-input::placeholder { color: var(--text3); }
+.tag-add-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+.tag-add-btn:hover { opacity: 0.85; }
+.tag-remove {
+  margin-left: 5px;
+  font-size: 13px;
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.tag-remove:hover { opacity: 1; }
+.behavior-remove {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 0 4px;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+.behavior-remove:hover { opacity: 1; color: var(--red); }
+.burnout-row { align-items: center; }
