@@ -1,111 +1,76 @@
+/* jshint esversion: 6 */
+
 const AVCOLORS = [
-  { bg: 'rgba(79,142,247,0.15)',  color: '#4f8ef7' },
-  { bg: 'rgba(34,199,122,0.15)',  color: '#22c77a' },
-  { bg: 'rgba(245,166,35,0.15)', color: '#f5a623' },
-  { bg: 'rgba(196,88,247,0.15)', color: '#c458f7' },
-  { bg: 'rgba(244,86,78,0.15)',  color: '#f4564e' },
-  { bg: 'rgba(32,201,209,0.15)', color: '#20c9d1' },
+  { bg: "rgba(79,142,247,0.15)",  color: "#4f8ef7" },
+  { bg: "rgba(34,199,122,0.15)",  color: "#22c77a" },
+  { bg: "rgba(245,166,35,0.15)", color: "#f5a623" },
+  { bg: "rgba(196,88,247,0.15)", color: "#c458f7" },
+  { bg: "rgba(244,86,78,0.15)",  color: "#f4564e" },
+  { bg: "rgba(32,201,209,0.15)", color: "#20c9d1" },
 ];
 
-let activeId   = null;
-let activeWeek = {};
+let activeId = null;
 
-let collabs = (function(){ try { const s=localStorage.getItem("pdi_collabs"); return s?JSON.parse(s):[]; } catch(e){ return []; } })();
+let collabs = (function () {
+  try {
+    const s = localStorage.getItem("pdi_collabs");
+    return s ? JSON.parse(s) : [];
+  } catch (e) {
+    return [];
+  }
+}());
+
+/* =========================================
+   PERSISTÊNCIA
+   ========================================= */
+
+function saveData() {
+  try {
+    localStorage.setItem("pdi_collabs", JSON.stringify(collabs));
+  } catch (e) { /* sem ação */ }
+}
 
 /* =========================================
    UTILITÁRIOS
    ========================================= */
 
-function scoreClass(s) { return s >= 80 ? 'score-hi' : s >= 65 ? 'score-mid' : 'score-lo'; }
-function scoreLabel(s) { return s >= 80 ? 'Alto' : s >= 65 ? 'Médio' : 'Atenção'; }
-function scoreColor(s) { return s >= 80 ? '#22c77a' : s >= 65 ? '#f5a623' : '#f4564e'; }
+function scoreClass(s) { return s >= 80 ? "score-hi" : s >= 65 ? "score-mid" : "score-lo"; }
+function scoreLabel(s) { return s >= 80 ? "Alto" : s >= 65 ? "Médio" : "Atenção"; }
+function scoreColor(s) { return s >= 80 ? "#22c77a" : s >= 65 ? "#f5a623" : "#f4564e"; }
+
 function today() {
   const n = new Date();
-  return `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`;
-}
-
-/* =========================================
-   SEMANAS
-   ========================================= */
-
-function currentWeekKey() {
-  const now  = new Date();
-  const day  = now.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const mon  = new Date(now);
-  mon.setDate(now.getDate() + diff);
-  return `Semana ${String(mon.getDate()).padStart(2,'0')}/${String(mon.getMonth()+1).padStart(2,'0')}/${mon.getFullYear()}`;
-}
-
-function ensureWeek(c, key) {
-  if (!c.weeks) c.weeks = {};
-  if (!c.weeks[key]) {
-    c.weeks[key] = {
-      score:        c.score,
-      difficulties: JSON.parse(JSON.stringify(c.difficulties)),
-      improvements: JSON.parse(JSON.stringify(c.improvements)),
-      behaviors:    JSON.parse(JSON.stringify(c.behaviors)),
-      burnout:      JSON.parse(JSON.stringify(c.burnout)),
-    };
-  }
-  return c.weeks[key];
-}
-
-function getActiveWeek(c) {
-  if (!activeWeek[c.id]) activeWeek[c.id] = currentWeekKey();
-  return { key: activeWeek[c.id], data: ensureWeek(c, activeWeek[c.id]) };
-}
-
-function isCurrentWeek(c) {
-  return (activeWeek[c.id] || currentWeekKey()) === currentWeekKey();
-}
-
-function weekData(id) {
-  const c = collabs.find(x => x.id === id);
-  return getActiveWeek(c).data;
-}
-
-function switchWeek(id, key) {
-  activeWeek[id] = key;
-  openDetail(id);
-}
-
-function createNewWeek(id) {
-  const c    = collabs.find(x => x.id === id);
-  const key  = currentWeekKey();
-  const keys = Object.keys(c.weeks || {}).sort();
-  const last = keys.length ? c.weeks[keys[keys.length - 1]] : null;
-  c.weeks[key] = last
-    ? JSON.parse(JSON.stringify({ ...last, score: c.score }))
-    : { score: c.score, difficulties: JSON.parse(JSON.stringify(c.difficulties)), improvements: JSON.parse(JSON.stringify(c.improvements)), behaviors: JSON.parse(JSON.stringify(c.behaviors)), burnout: JSON.parse(JSON.stringify(c.burnout)) };
-  activeWeek[id] = key;
-  openDetail(id);
+  return String(n.getDate()).padStart(2, "0") + "/" +
+    String(n.getMonth() + 1).padStart(2, "0") + "/" +
+    n.getFullYear();
 }
 
 /* =========================================
    LISTA DE COLABORADORES
    ========================================= */
 
-function renderList(filter = '') {
-  const list = document.getElementById('collab-list');
-  list.innerHTML = '';
+function renderList(filter) {
+  filter = filter || "";
+  const list = document.getElementById("collab-list");
+  list.innerHTML = "";
   collabs
-    .filter(c => c.name.toLowerCase().includes(filter.toLowerCase()) || c.role.toLowerCase().includes(filter.toLowerCase()))
-    .forEach(c => {
+    .filter(function (c) {
+      return c.name.toLowerCase().includes(filter.toLowerCase()) ||
+        c.role.toLowerCase().includes(filter.toLowerCase());
+    })
+    .forEach(function (c) {
       const cl  = AVCOLORS[c.colorIdx % AVCOLORS.length];
-      const div = document.createElement('div');
-      div.className = 'collab-item' + (activeId === c.id ? ' active' : '');
-      div.onclick   = () => openDetail(c.id);
-      div.innerHTML = `
-        <div class="c-avatar" style="background:${cl.bg};color:${cl.color}">${c.initials}</div>
-        <div class="c-info"><div class="c-name">${c.name}</div><div class="c-role">${c.role}</div></div>
-        <span class="c-score-pill ${scoreClass(c.score)}">${c.score}%</span>
-        <button class="c-delete-btn" onclick="event.stopPropagation();confirmDelete(${c.id})">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-          </svg>
-        </button>
-      `;
+      const div = document.createElement("div");
+      div.className = "collab-item" + (activeId === c.id ? " active" : "");
+      div.onclick   = function () { openDetail(c.id); };
+      div.innerHTML =
+        "<div class=\"c-avatar\" style=\"background:" + cl.bg + ";color:" + cl.color + "\">" + c.initials + "</div>" +
+        "<div class=\"c-info\"><div class=\"c-name\">" + c.name + "</div><div class=\"c-role\">" + c.role + "</div></div>" +
+        "<span class=\"c-score-pill " + scoreClass(c.score) + "\">" + c.score + "%</span>" +
+        "<button class=\"c-delete-btn\" onclick=\"event.stopPropagation();confirmDelete(" + c.id + ")\">" +
+        "<svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\">" +
+        "<polyline points=\"3 6 5 6 21 6\"/><path d=\"M19 6l-1 14H6L5 6\"/><path d=\"M10 11v6\"/><path d=\"M14 11v6\"/><path d=\"M9 6V4h6v2\"/>" +
+        "</svg></button>";
       list.appendChild(div);
     });
 }
@@ -119,380 +84,354 @@ function filterList(val) { renderList(val); }
 function openDetail(id) {
   const isNew = activeId !== id;
   activeId    = id;
-  const c     = collabs.find(x => x.id === id);
-  ensureWeek(c, currentWeekKey());
-  if (isNew) activeWeek[id] = currentWeekKey();
-  const main = document.getElementById('main-panel');
-  const cls  = isNew ? 'panel-content slide-in' : 'panel-content';
-  main.innerHTML = `<div class="${cls}" id="pc-${id}">${buildPanel(c)}</div>`;
-  renderList(document.getElementById('search-input').value);
+  const c     = collabs.find(function (x) { return x.id === id; });
+  const main  = document.getElementById("main-panel");
+  const cls   = isNew ? "panel-content slide-in" : "panel-content";
+  main.innerHTML = "<div class=\"" + cls + "\" id=\"pc-" + id + "\">" + buildPanel(c) + "</div>";
+  renderList(document.getElementById("search-input").value);
   saveData();
 }
 
 function buildPanel(c) {
-  const cl       = AVCOLORS[c.colorIdx % AVCOLORS.length];
-  const { key, data } = getActiveWeek(c);
-  const readonly = !isCurrentWeek(c);
-  return `
-    ${buildHeader(c, cl)}
-    ${buildWeekSelector(c, key)}
-    ${readonly ? '<div class="week-readonly-banner">📅 Visualizando semana passada — edições desabilitadas</div>' : ''}
-    ${buildMetrics(c)}
-    <div class="sections-grid">
-      ${buildStrongCard(c)}
-      ${buildGoalCard(c)}
-      ${buildStepsCard(c)}
-    </div>
-    <div class="sections-grid">
-      ${buildDiffCard(c, data, readonly)}
-      ${buildImprovCard(c, data, readonly)}
-    </div>
-    <div class="sections-grid">
-      ${buildBehaviorCard(c, data, readonly)}
-      ${buildBurnoutCard(c, data, readonly)}
-    </div>
-    ${buildSystemCard(c)}
-    ${buildObsCard(c)}
-  `;
-}
-
-function buildWeekSelector(c, currentKey) {
-  const curWeek = currentWeekKey();
-  const weeks   = Object.keys(c.weeks || {}).sort().reverse();
-  if (!weeks.includes(curWeek)) weeks.unshift(curWeek);
-  const options = weeks.map(w =>
-    `<option value="${w}" ${w === currentKey ? 'selected' : ''}>${w}${w === curWeek ? ' (atual)' : ''}</option>`
-  ).join('');
-  return `
-    <div class="week-selector-row">
-      <span class="week-label">📆 Semana:</span>
-      <select class="week-select" onchange="switchWeek(${c.id}, this.value)">${options}</select>
-      <button class="new-week-btn" onclick="createNewWeek(${c.id})">+ Nova semana</button>
-    </div>
-  `;
+  const cl = AVCOLORS[c.colorIdx % AVCOLORS.length];
+  return buildHeader(c, cl) +
+    buildMetrics(c) +
+    "<div class=\"sections-grid\">" +
+      buildStrongCard(c) +
+      buildGoalCard(c) +
+      buildStepsCard(c) +
+    "</div>" +
+    "<div class=\"sections-grid\">" +
+      buildDiffCard(c) +
+      buildImprovCard(c) +
+    "</div>" +
+    "<div class=\"sections-grid\">" +
+      buildBehaviorCard(c) +
+      buildBurnoutCard(c) +
+    "</div>" +
+    buildSystemCard(c) +
+    buildObsCard(c);
 }
 
 function buildHeader(c, cl) {
-  const admStr = c.admissionDate || '—';
-  let tenureStr = '';
+  const admStr = c.admissionDate || "—";
+  let tenureStr = "";
   if (c.admissionDate) {
-    const [d, m, y] = c.admissionDate.split('/').map(Number);
-    const adm    = new Date(y, m - 1, d);
+    const parts  = c.admissionDate.split("/");
+    const adm    = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
     const now    = new Date();
     const months = (now.getFullYear() - adm.getFullYear()) * 12 + (now.getMonth() - adm.getMonth());
     const yrs    = Math.floor(months / 12);
     const mos    = months % 12;
-    tenureStr    = yrs > 0 ? `${yrs}a ${mos}m` : `${mos} meses`;
+    tenureStr    = yrs > 0 ? yrs + "a " + mos + "m" : mos + " meses";
   }
-  return `
-    <div class="panel-header">
-      <div class="panel-avatar" style="background:${cl.bg};color:${cl.color}">${c.initials}</div>
-      <div>
-        <div class="panel-name">${c.name}</div>
-        <div class="panel-role-txt">${c.role}</div>
-        <div class="panel-admission">
-          <span class="adm-chip">📅 Admissão: <strong>${admStr}</strong>${tenureStr ? ` <span class="adm-tenure">(${tenureStr})</span>` : ''}</span>
-        </div>
-      </div>
-      <div class="header-stats">
-        <div class="score-display">
-          <div class="score-number" style="color:${scoreColor(c.score)}">${c.score}%</div>
-          <div class="score-label">${scoreLabel(c.score)}</div>
-        </div>
-        <div class="metas-display">
-          <div class="metas-number">${c.metasBatidas ?? 0}</div>
-          <div class="metas-label">metas batidas</div>
-        </div>
-      </div>
-      <button class="edit-panel-btn" onclick="openEditModal(${c.id})">✏️ Editar</button>
-      <button class="delete-panel-btn" onclick="confirmDelete(${c.id})">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-        </svg>
-        Excluir
-      </button>
-    </div>
-  `;
+  const tenureHtml = tenureStr ? " <span class=\"adm-tenure\">(" + tenureStr + ")</span>" : "";
+  return "<div class=\"panel-header\">" +
+    "<div class=\"panel-avatar\" style=\"background:" + cl.bg + ";color:" + cl.color + "\">" + c.initials + "</div>" +
+    "<div>" +
+      "<div class=\"panel-name\">" + c.name + "</div>" +
+      "<div class=\"panel-role-txt\">" + c.role + "</div>" +
+      "<div class=\"panel-admission\"><span class=\"adm-chip\">📅 Admissão: <strong>" + admStr + "</strong>" + tenureHtml + "</span></div>" +
+    "</div>" +
+    "<div class=\"header-stats\">" +
+      "<div class=\"score-display\">" +
+        "<div class=\"score-number\" style=\"color:" + scoreColor(c.score) + "\">" + c.score + "%</div>" +
+        "<div class=\"score-label\">" + scoreLabel(c.score) + "</div>" +
+      "</div>" +
+      "<div class=\"metas-display\">" +
+        "<div class=\"metas-number\">" + (c.metasBatidas || 0) + "</div>" +
+        "<div class=\"metas-label\">metas batidas</div>" +
+      "</div>" +
+    "</div>" +
+    "<button class=\"edit-panel-btn\" onclick=\"openEditModal(" + c.id + ")\">✏️ Editar</button>" +
+    "<button class=\"delete-panel-btn\" onclick=\"confirmDelete(" + c.id + ")\">" +
+      "<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\">" +
+      "<polyline points=\"3 6 5 6 21 6\"/><path d=\"M19 6l-1 14H6L5 6\"/><path d=\"M10 11v6\"/><path d=\"M14 11v6\"/><path d=\"M9 6V4h6v2\"/>" +
+      "</svg> Excluir" +
+    "</button>" +
+  "</div>";
 }
 
 function buildMetrics(c) {
-  return `
-    <div class="metrics-row">
-      <div class="metric-box">
-        <div class="metric-lbl">🏆 Máx. Atendimentos</div>
-        <input class="metric-input" value="${c.metrics.maxAtt}" onchange="saveMetric(${c.id},'maxAtt',this.value)" />
-        <div class="metric-sub">recorde pessoal</div>
-      </div>
-      <div class="metric-box">
-        <div class="metric-lbl">⏱ TMA</div>
-        <input class="metric-input" value="${c.metrics.tma}" onchange="saveMetric(${c.id},'tma',this.value)" />
-        <div class="metric-sub">tempo médio atend.</div>
-      </div>
-      <div class="metric-box">
-        <div class="metric-lbl">⏳ TME</div>
-        <input class="metric-input" value="${c.metrics.tme}" onchange="saveMetric(${c.id},'tme',this.value)" />
-        <div class="metric-sub">tempo médio espera</div>
-      </div>
-      <div class="metric-box">
-        <div class="metric-lbl">📊 Média / Dia</div>
-        <input class="metric-input" value="${c.metrics.avgDay}" onchange="saveMetric(${c.id},'avgDay',this.value)" />
-        <div class="metric-sub">atendimentos/dia</div>
-      </div>
-      <div class="metric-box">
-        <div class="metric-lbl">Qualidade</div>
-        <input class="metric-input" value="${c.metrics.quality ?? '—'}" onchange="saveMetric(${c.id},'quality',this.value)" />
-      </div>
-    </div>
-  `;
+  const q = c.metrics.quality !== undefined ? c.metrics.quality : "—";
+  return "<div class=\"metrics-row\">" +
+    "<div class=\"metric-box\"><div class=\"metric-lbl\">🏆 Máx. Atendimentos</div>" +
+    "<input class=\"metric-input\" value=\"" + c.metrics.maxAtt + "\" onchange=\"saveMetric(" + c.id + ",'maxAtt',this.value)\" />" +
+    "<div class=\"metric-sub\">recorde pessoal</div></div>" +
+
+    "<div class=\"metric-box\"><div class=\"metric-lbl\">⏱ TMA</div>" +
+    "<input class=\"metric-input\" value=\"" + c.metrics.tma + "\" onchange=\"saveMetric(" + c.id + ",'tma',this.value)\" />" +
+    "<div class=\"metric-sub\">tempo médio atend.</div></div>" +
+
+    "<div class=\"metric-box\"><div class=\"metric-lbl\">⏳ TME</div>" +
+    "<input class=\"metric-input\" value=\"" + c.metrics.tme + "\" onchange=\"saveMetric(" + c.id + ",'tme',this.value)\" />" +
+    "<div class=\"metric-sub\">tempo médio espera</div></div>" +
+
+    "<div class=\"metric-box\"><div class=\"metric-lbl\">📊 Média / Dia</div>" +
+    "<input class=\"metric-input\" value=\"" + c.metrics.avgDay + "\" onchange=\"saveMetric(" + c.id + ",'avgDay',this.value)\" />" +
+    "<div class=\"metric-sub\">atendimentos/dia</div></div>" +
+
+    "<div class=\"metric-box\"><div class=\"metric-lbl\">Qualidade</div>" +
+    "<input class=\"metric-input\" value=\"" + q + "\" onchange=\"saveMetric(" + c.id + ",'quality',this.value)\" /></div>" +
+  "</div>";
 }
 
 function buildStrongCard(c) {
-  const pills = c.strong.map(s => `<span class="strong-pill">${s}</span>`).join('');
-  return `
-    <div class="section-card">
-      <div class="section-title">⭐ Pontos Fortes</div>
-      <div class="strong-pills">${pills || '<span style="font-size:12px;color:var(--text3)">Nenhum cadastrado ainda.</span>'}</div>
-    </div>
-  `;
+  const pills = c.strong.map(function (s) { return "<span class=\"strong-pill\">" + s + "</span>"; }).join("");
+  return "<div class=\"section-card\">" +
+    "<div class=\"section-title\">⭐ Pontos Fortes</div>" +
+    "<div class=\"strong-pills\">" + (pills || "<span style=\"font-size:12px;color:var(--text3)\">Nenhum cadastrado ainda.</span>") + "</div>" +
+  "</div>";
 }
 
 function buildGoalCard(c) {
-  return `
-    <div class="section-card">
-      <div class="section-title">🎯 Onde quer chegar</div>
-      <div class="goal-banner">${c.goal}</div>
-    </div>
-  `;
+  return "<div class=\"section-card\">" +
+    "<div class=\"section-title\">🎯 Onde quer chegar</div>" +
+    "<div class=\"goal-banner\">" + c.goal + "</div>" +
+  "</div>";
 }
 
 function buildStepsCard(c) {
-  const rows = c.steps.map((s, i) => `
-    <div class="check-row">
-      <div class="check-box ${c.stepsChecked[i] ? 'done' : ''}" onclick="toggleCheck(${c.id},${i})">
-        <svg viewBox="0 0 12 12"><polyline points="1.5,6 4.5,9 10.5,3"/></svg>
-      </div>
-      <span class="check-lbl ${c.stepsChecked[i] ? 'done' : ''}">${s}</span>
-      <span style="cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 4px" onclick="removeStep(${c.id},${i})">×</span>
-    </div>
-  `).join('');
-  return `
-    <div class="section-card full">
-      <div class="section-title">✅ Passos para alcançar o objetivo</div>
-      <div class="check-list">${rows}</div>
-      <div class="add-step-row">
-        <input class="mini-input" id="step-inp-${c.id}" placeholder="Adicionar novo passo..." onkeydown="if(event.key==='Enter') addStep(${c.id})" />
-        <button class="mini-btn" onclick="addStep(${c.id})">+</button>
-      </div>
-    </div>
-  `;
+  const rows = c.steps.map(function (s, i) {
+    const done = c.stepsChecked[i] ? "done" : "";
+    return "<div class=\"check-row\">" +
+      "<div class=\"check-box " + done + "\" onclick=\"toggleCheck(" + c.id + "," + i + ")\">" +
+        "<svg viewBox=\"0 0 12 12\"><polyline points=\"1.5,6 4.5,9 10.5,3\"/></svg>" +
+      "</div>" +
+      "<span class=\"check-lbl " + done + "\">" + s + "</span>" +
+      "<span style=\"cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 4px\" onclick=\"removeStep(" + c.id + "," + i + ")\">×</span>" +
+    "</div>";
+  }).join("");
+  return "<div class=\"section-card full\">" +
+    "<div class=\"section-title\">✅ Passos para alcançar o objetivo</div>" +
+    "<div class=\"check-list\">" + rows + "</div>" +
+    "<div class=\"add-step-row\">" +
+      "<input class=\"mini-input\" id=\"step-inp-" + c.id + "\" placeholder=\"Adicionar novo passo...\" onkeydown=\"if(event.key==='Enter') addStep(" + c.id + ")\" />" +
+      "<button class=\"mini-btn\" onclick=\"addStep(" + c.id + ")\">+</button>" +
+    "</div>" +
+  "</div>";
 }
 
-function buildDiffCard(c, data, readonly) {
-  const src  = data ? data.difficulties : c.difficulties;
-  const tags = Object.entries(src).map(([k, v]) => `
-    <span class="tag ${v ? 't-bad' : ''}" ${!readonly ? `onclick="toggleWeekTag(${c.id},'difficulties','${k}')"` : ''}>
-      ${v ? '● ' : ''}${k}
-      ${!readonly ? `<span class="tag-remove" onclick="event.stopPropagation();removeWeekTag(${c.id},'difficulties','${k}')">×</span>` : ''}
-    </span>
-  `).join('');
-  return `
-    <div class="section-card">
-      <div class="section-title">⚠️ Dificuldades localizadas</div>
-      <div class="tags-wrap">${tags}</div>
-      ${!readonly ? `<div class="tag-add-row">
-        <input class="tag-input" id="diff-inp-${c.id}" placeholder="Nova dificuldade..." onkeydown="if(event.key==='Enter')addWeekTag(${c.id},'difficulties','diff-inp-${c.id}')" />
-        <button class="tag-add-btn" onclick="addWeekTag(${c.id},'difficulties','diff-inp-${c.id}')">+</button>
-      </div>` : ''}
-    </div>
-  `;
+function buildDiffCard(c) {
+  const tags = Object.keys(c.difficulties).map(function (k) {
+    const v = c.difficulties[k];
+    return "<span class=\"tag " + (v ? "t-bad" : "") + "\" onclick=\"toggleTag(" + c.id + ",'difficulties','" + k + "')\">" +
+      (v ? "● " : "") + k +
+      "<span class=\"tag-remove\" onclick=\"event.stopPropagation();removeTag(" + c.id + ",'difficulties','" + k + "')\">×</span>" +
+    "</span>";
+  }).join("");
+  return "<div class=\"section-card\">" +
+    "<div class=\"section-title\">⚠️ Dificuldades localizadas</div>" +
+    "<div class=\"tags-wrap\">" + tags + "</div>" +
+    "<div class=\"tag-add-row\">" +
+      "<input class=\"tag-input\" id=\"diff-inp-" + c.id + "\" placeholder=\"Nova dificuldade...\" onkeydown=\"if(event.key==='Enter') addTag(" + c.id + ",'difficulties','diff-inp-" + c.id + "')\" />" +
+      "<button class=\"tag-add-btn\" onclick=\"addTag(" + c.id + ",'difficulties','diff-inp-" + c.id + "')\">+</button>" +
+    "</div>" +
+  "</div>";
 }
 
-function buildImprovCard(c, data, readonly) {
-  const src  = data ? data.improvements : c.improvements;
-  const tags = Object.entries(src).map(([k, v]) => `
-    <span class="tag ${v ? 't-good' : ''}" ${!readonly ? `onclick="toggleWeekTag(${c.id},'improvements','${k}')"` : ''}>
-      ${v ? '● ' : ''}${k}
-      ${!readonly ? `<span class="tag-remove" onclick="event.stopPropagation();removeWeekTag(${c.id},'improvements','${k}')">×</span>` : ''}
-    </span>
-  `).join('');
-  return `
-    <div class="section-card">
-      <div class="section-title">📈 Pontos de melhoria</div>
-      <div class="tags-wrap">${tags}</div>
-      ${!readonly ? `<div class="tag-add-row">
-        <input class="tag-input" id="impr-inp-${c.id}" placeholder="Novo ponto de melhoria..." onkeydown="if(event.key==='Enter')addWeekTag(${c.id},'improvements','impr-inp-${c.id}')" />
-        <button class="tag-add-btn" onclick="addWeekTag(${c.id},'improvements','impr-inp-${c.id}')">+</button>
-      </div>` : ''}
-    </div>
-  `;
+function buildImprovCard(c) {
+  const tags = Object.keys(c.improvements).map(function (k) {
+    const v = c.improvements[k];
+    return "<span class=\"tag " + (v ? "t-good" : "") + "\" onclick=\"toggleTag(" + c.id + ",'improvements','" + k + "')\">" +
+      (v ? "● " : "") + k +
+      "<span class=\"tag-remove\" onclick=\"event.stopPropagation();removeTag(" + c.id + ",'improvements','" + k + "')\">×</span>" +
+    "</span>";
+  }).join("");
+  return "<div class=\"section-card\">" +
+    "<div class=\"section-title\">📈 Pontos de melhoria</div>" +
+    "<div class=\"tags-wrap\">" + tags + "</div>" +
+    "<div class=\"tag-add-row\">" +
+      "<input class=\"tag-input\" id=\"impr-inp-" + c.id + "\" placeholder=\"Novo ponto de melhoria...\" onkeydown=\"if(event.key==='Enter') addTag(" + c.id + ",'improvements','impr-inp-" + c.id + "')\" />" +
+      "<button class=\"tag-add-btn\" onclick=\"addTag(" + c.id + ",'improvements','impr-inp-" + c.id + "')\">+</button>" +
+    "</div>" +
+  "</div>";
 }
 
-function buildBehaviorCard(c, data, readonly) {
-  const src  = data ? data.behaviors : c.behaviors;
-  const rows = Object.entries(src).map(([k, v]) => `
-    <div class="behavior-row ${v ? 'flagged' : ''}" ${!readonly ? `onclick="toggleWeekBehavior(${c.id},'${k}')"` : ''}>
-      <div class="behavior-dot"></div>${k}
-      ${!readonly ? `<span class="behavior-remove" onclick="event.stopPropagation();removeWeekBehavior(${c.id},'${k}')">×</span>` : ''}
-    </div>
-  `).join('');
-  return `
-    <div class="section-card">
-      <div class="section-title">🚨 Comportamento Operacional</div>
-      <div class="behavior-list">${rows}</div>
-      ${!readonly ? `<div class="tag-add-row">
-        <input class="tag-input" id="beh-inp-${c.id}" placeholder="Novo comportamento..." onkeydown="if(event.key==='Enter')addWeekBehavior(${c.id},'beh-inp-${c.id}')" />
-        <button class="tag-add-btn" onclick="addWeekBehavior(${c.id},'beh-inp-${c.id}')">+</button>
-      </div>` : ''}
-    </div>
-  `;
+function buildBehaviorCard(c) {
+  const rows = Object.keys(c.behaviors).map(function (k) {
+    const v = c.behaviors[k];
+    return "<div class=\"behavior-row " + (v ? "flagged" : "") + "\" onclick=\"toggleBehavior(" + c.id + ",'" + k + "')\">" +
+      "<div class=\"behavior-dot\"></div>" + k +
+      "<span class=\"behavior-remove\" onclick=\"event.stopPropagation();removeBehavior(" + c.id + ",'" + k + "')\">×</span>" +
+    "</div>";
+  }).join("");
+  return "<div class=\"section-card\">" +
+    "<div class=\"section-title\">🚨 Comportamento Operacional</div>" +
+    "<div class=\"behavior-list\">" + rows + "</div>" +
+    "<div class=\"tag-add-row\">" +
+      "<input class=\"tag-input\" id=\"beh-inp-" + c.id + "\" placeholder=\"Novo comportamento...\" onkeydown=\"if(event.key==='Enter') addBehavior(" + c.id + ",'beh-inp-" + c.id + "')\" />" +
+      "<button class=\"tag-add-btn\" onclick=\"addBehavior(" + c.id + ",'beh-inp-" + c.id + "')\">+</button>" +
+    "</div>" +
+  "</div>";
 }
 
-function buildBurnoutCard(c, data, readonly) {
-  const src  = data ? data.burnout : c.burnout;
-  const rows = Object.entries(src).map(([k, lvl]) => {
-    const dots = [1, 2, 3].map(i => {
-      const cls = `b-dot l${i}${i <= lvl ? ' on' : ''}`;
-      return `<div class="${cls}" ${!readonly ? `onclick="setWeekBurnout(${c.id},'${k}',${i})"` : ''}></div>`;
-    }).join('');
-    return `
-      <div class="burnout-row">
-        <span class="burnout-lbl">${k}</span>
-        <div class="burnout-dots">${dots}</div>
-        ${!readonly ? `<span class="behavior-remove" onclick="removeWeekBurnout(${c.id},'${k}')">×</span>` : ''}
-      </div>
-    `;
-  }).join('');
-  return `
-    <div class="section-card">
-      <div class="section-title">📊 Análise de Produtividade</div>
-      <div class="burnout-table">${rows}</div>
-      <div class="burnout-legend" style="margin-top:10px">
-        <span class="b-leg"><span class="b-leg-dot" style="background:#f4564e"></span>Baixo</span>
-        <span class="b-leg"><span class="b-leg-dot" style="background:#f5a623"></span>Médio</span>
-        <span class="b-leg"><span class="b-leg-dot" style="background:#22c77a"></span>Alto</span>
-      </div>
-      ${!readonly ? `<div class="tag-add-row" style="margin-top:12px">
-        <input class="tag-input" id="burn-inp-${c.id}" placeholder="Novo indicador de produtividade..." onkeydown="if(event.key==='Enter')addWeekBurnout(${c.id},'burn-inp-${c.id}')" />
-        <button class="tag-add-btn" onclick="addWeekBurnout(${c.id},'burn-inp-${c.id}')">+</button>
-      </div>` : ''}
-    </div>
-  `;
+function buildBurnoutCard(c) {
+  const rows = Object.keys(c.burnout).map(function (k) {
+    const lvl  = c.burnout[k];
+    const dots = [1, 2, 3].map(function (i) {
+      return "<div class=\"b-dot l" + i + (i <= lvl ? " on" : "") + "\" onclick=\"setBurnout(" + c.id + ",'" + k + "'," + i + ")\"></div>";
+    }).join("");
+    return "<div class=\"burnout-row\">" +
+      "<span class=\"burnout-lbl\">" + k + "</span>" +
+      "<div class=\"burnout-dots\">" + dots + "</div>" +
+      "<span class=\"behavior-remove\" onclick=\"removeBurnout(" + c.id + ",'" + k + "')\">×</span>" +
+    "</div>";
+  }).join("");
+  return "<div class=\"section-card\">" +
+    "<div class=\"section-title\">📊 Análise de Produtividade</div>" +
+    "<div class=\"burnout-table\">" + rows + "</div>" +
+    "<div class=\"burnout-legend\" style=\"margin-top:10px\">" +
+      "<span class=\"b-leg\"><span class=\"b-leg-dot\" style=\"background:#f4564e\"></span>Baixo</span>" +
+      "<span class=\"b-leg\"><span class=\"b-leg-dot\" style=\"background:#f5a623\"></span>Médio</span>" +
+      "<span class=\"b-leg\"><span class=\"b-leg-dot\" style=\"background:#22c77a\"></span>Alto</span>" +
+    "</div>" +
+    "<div class=\"tag-add-row\" style=\"margin-top:12px\">" +
+      "<input class=\"tag-input\" id=\"burn-inp-" + c.id + "\" placeholder=\"Novo indicador...\" onkeydown=\"if(event.key==='Enter') addBurnout(" + c.id + ",'burn-inp-" + c.id + "')\" />" +
+      "<button class=\"tag-add-btn\" onclick=\"addBurnout(" + c.id + ",'burn-inp-" + c.id + "')\">+</button>" +
+    "</div>" +
+  "</div>";
 }
 
 function buildSystemCard(c) {
-  return `
-    <div class="section-card" style="margin-bottom:16px">
-      <div class="section-title">⚙️ Melhorias Sistêmicas</div>
-      <textarea class="big-textarea" placeholder="Melhorias de processo, sistema ou estrutura..."
-        onchange="saveField(${c.id},'systemImprove',this.value)">${c.systemImprove}</textarea>
-    </div>
-  `;
+  return "<div class=\"section-card\" style=\"margin-bottom:16px\">" +
+    "<div class=\"section-title\">⚙️ Melhorias Sistêmicas</div>" +
+    "<textarea class=\"big-textarea\" placeholder=\"Melhorias de processo, sistema ou estrutura...\" onchange=\"saveField(" + c.id + ",'systemImprove',this.value)\">" + c.systemImprove + "</textarea>" +
+  "</div>";
 }
 
 function buildObsCard(c) {
-  const entries = c.observations.slice().reverse().map(o => `
-    <div class="obs-entry">
-      <div class="obs-meta">
-        <span class="obs-date">${o.date}</span>
-        <span class="obs-delta ${o.delta === 'up' ? 'd-up' : o.delta === 'down' ? 'd-down' : 'd-same'}">
-          ${o.delta === 'up' ? '↑ Melhora' : o.delta === 'down' ? '↓ Piora' : '→ Estável'}
-        </span>
-      </div>
-      <div class="obs-text-body">${o.text}</div>
-    </div>
-  `).join('');
-  return `
-    <div class="section-card" style="margin-bottom:32px">
-      <div class="section-title">💬 Observações & Feedback</div>
-      <div class="obs-list">${entries || '<p style="font-size:12px;color:var(--text3)">Nenhuma observação ainda.</p>'}</div>
-      <hr class="divider" />
-      <textarea class="big-textarea" id="obs-txt-${c.id}" placeholder="Nova observação de feedback..."></textarea>
-      <div class="obs-controls">
-        <select class="delta-select" id="obs-delta-${c.id}">
-          <option value="up">↑ Melhora</option>
-          <option value="same">→ Estável</option>
-          <option value="down">↓ Piora</option>
-        </select>
-        <button class="save-btn" style="margin-left:auto" onclick="saveObs(${c.id})">💾 Salvar Observação</button>
-      </div>
-    </div>
-  `;
+  const entries = c.observations.slice().reverse().map(function (o) {
+    const deltaClass = o.delta === "up" ? "d-up" : o.delta === "down" ? "d-down" : "d-same";
+    const deltaLabel = o.delta === "up" ? "↑ Melhora" : o.delta === "down" ? "↓ Piora" : "→ Estável";
+    return "<div class=\"obs-entry\">" +
+      "<div class=\"obs-meta\"><span class=\"obs-date\">" + o.date + "</span><span class=\"obs-delta " + deltaClass + "\">" + deltaLabel + "</span></div>" +
+      "<div class=\"obs-text-body\">" + o.text + "</div>" +
+    "</div>";
+  }).join("");
+  return "<div class=\"section-card\" style=\"margin-bottom:32px\">" +
+    "<div class=\"section-title\">💬 Observações & Feedback</div>" +
+    "<div class=\"obs-list\">" + (entries || "<p style=\"font-size:12px;color:var(--text3)\">Nenhuma observação ainda.</p>") + "</div>" +
+    "<hr class=\"divider\" />" +
+    "<textarea class=\"big-textarea\" id=\"obs-txt-" + c.id + "\" placeholder=\"Nova observação de feedback...\"></textarea>" +
+    "<div class=\"obs-controls\">" +
+      "<select class=\"delta-select\" id=\"obs-delta-" + c.id + "\">" +
+        "<option value=\"up\">↑ Melhora</option>" +
+        "<option value=\"same\">→ Estável</option>" +
+        "<option value=\"down\">↓ Piora</option>" +
+      "</select>" +
+      "<button class=\"save-btn\" style=\"margin-left:auto\" onclick=\"saveObs(" + c.id + ")\">💾 Salvar Observação</button>" +
+    "</div>" +
+  "</div>";
 }
 
 /* =========================================
    AÇÕES — MÉTRICAS / CAMPOS
    ========================================= */
 
-function saveMetric(id, field, val) { collabs.find(x => x.id === id).metrics[field] = val; saveData(); }
-function saveField(id, field, val)  { collabs.find(x => x.id === id)[field] = val; saveData(); }
+function saveMetric(id, field, val) {
+  collabs.find(function (x) { return x.id === id; }).metrics[field] = val;
+  saveData();
+}
+
+function saveField(id, field, val) {
+  collabs.find(function (x) { return x.id === id; })[field] = val;
+  saveData();
+}
 
 /* =========================================
    AÇÕES — CHECKLIST
    ========================================= */
 
 function toggleCheck(id, i) {
-  const c = collabs.find(x => x.id === id);
+  const c = collabs.find(function (x) { return x.id === id; });
   c.stepsChecked[i] = !c.stepsChecked[i];
   const done  = c.stepsChecked.filter(Boolean).length;
   const total = c.stepsChecked.length;
   c.score = Math.min(100, Math.max(30, Math.round((done / Math.max(total, 1)) * 40 + 60)));
-  if (isCurrentWeek(c)) getActiveWeek(c).data.score = c.score;
   openDetail(id);
 }
 
 function addStep(id) {
-  const inp = document.getElementById(`step-inp-${id}`);
-  if (!inp || !inp.value.trim()) return;
-  const c = collabs.find(x => x.id === id);
+  const inp = document.getElementById("step-inp-" + id);
+  if (!inp || !inp.value.trim()) { return; }
+  const c = collabs.find(function (x) { return x.id === id; });
   c.steps.push(inp.value.trim());
   c.stepsChecked.push(false);
   openDetail(id);
 }
 
 function removeStep(id, i) {
-  const c = collabs.find(x => x.id === id);
+  const c = collabs.find(function (x) { return x.id === id; });
   c.steps.splice(i, 1);
   c.stepsChecked.splice(i, 1);
   openDetail(id);
 }
 
 /* =========================================
-   AÇÕES DE SEMANA
+   AÇÕES — TAGS / COMPORTAMENTO / PRODUTIVIDADE
    ========================================= */
 
-function toggleWeekTag(id, field, key)     { weekData(id)[field][key] = !weekData(id)[field][key]; openDetail(id); }
-function removeWeekTag(id, field, key)     { delete weekData(id)[field][key]; openDetail(id); }
-function toggleWeekBehavior(id, key)       { const d = weekData(id); d.behaviors[key] = !d.behaviors[key]; openDetail(id); }
-function removeWeekBehavior(id, key)       { delete weekData(id).behaviors[key]; openDetail(id); }
-function removeWeekBurnout(id, key)        { delete weekData(id).burnout[key]; openDetail(id); }
-
-function addWeekTag(id, field, inputId) {
-  const inp = document.getElementById(inputId);
-  if (!inp || !inp.value.trim()) return;
-  const d = weekData(id);
-  if (!d[field].hasOwnProperty(inp.value.trim())) d[field][inp.value.trim()] = false;
+function toggleTag(id, field, key) {
+  const c = collabs.find(function (x) { return x.id === id; });
+  c[field][key] = !c[field][key];
   openDetail(id);
 }
 
-function addWeekBehavior(id, inputId) {
-  const inp = document.getElementById(inputId);
-  if (!inp || !inp.value.trim()) return;
-  const d = weekData(id);
-  if (!d.behaviors.hasOwnProperty(inp.value.trim())) d.behaviors[inp.value.trim()] = false;
+function removeTag(id, field, key) {
+  const c = collabs.find(function (x) { return x.id === id; });
+  delete c[field][key];
   openDetail(id);
 }
 
-function setWeekBurnout(id, key, val) {
-  const d = weekData(id);
-  d.burnout[key] = d.burnout[key] === val ? val - 1 : val;
+function addTag(id, field, inputId) {
+  const inp = document.getElementById(inputId);
+  if (!inp || !inp.value.trim()) { return; }
+  const c   = collabs.find(function (x) { return x.id === id; });
+  const key = inp.value.trim();
+  if (!Object.prototype.hasOwnProperty.call(c[field], key)) { c[field][key] = false; }
   openDetail(id);
 }
 
-function addWeekBurnout(id, inputId) {
+function toggleBehavior(id, key) {
+  const c = collabs.find(function (x) { return x.id === id; });
+  c.behaviors[key] = !c.behaviors[key];
+  openDetail(id);
+}
+
+function removeBehavior(id, key) {
+  const c = collabs.find(function (x) { return x.id === id; });
+  delete c.behaviors[key];
+  openDetail(id);
+}
+
+function addBehavior(id, inputId) {
   const inp = document.getElementById(inputId);
-  if (!inp || !inp.value.trim()) return;
-  const d = weekData(id);
-  if (!d.burnout.hasOwnProperty(inp.value.trim())) d.burnout[inp.value.trim()] = 0;
+  if (!inp || !inp.value.trim()) { return; }
+  const c   = collabs.find(function (x) { return x.id === id; });
+  const key = inp.value.trim();
+  if (!Object.prototype.hasOwnProperty.call(c.behaviors, key)) { c.behaviors[key] = false; }
+  openDetail(id);
+}
+
+function setBurnout(id, key, val) {
+  const c = collabs.find(function (x) { return x.id === id; });
+  c.burnout[key] = c.burnout[key] === val ? val - 1 : val;
+  openDetail(id);
+}
+
+function removeBurnout(id, key) {
+  const c = collabs.find(function (x) { return x.id === id; });
+  delete c.burnout[key];
+  openDetail(id);
+}
+
+function addBurnout(id, inputId) {
+  const inp = document.getElementById(inputId);
+  if (!inp || !inp.value.trim()) { return; }
+  const c   = collabs.find(function (x) { return x.id === id; });
+  const key = inp.value.trim();
+  if (!Object.prototype.hasOwnProperty.call(c.burnout, key)) { c.burnout[key] = 0; }
   openDetail(id);
 }
 
@@ -501,10 +440,11 @@ function addWeekBurnout(id, inputId) {
    ========================================= */
 
 function saveObs(id) {
-  const c   = collabs.find(x => x.id === id);
-  const txt = document.getElementById(`obs-txt-${id}`).value.trim();
-  if (!txt) return;
-  c.observations.push({ date: today(), text: txt, delta: document.getElementById(`obs-delta-${id}`).value });
+  const c   = collabs.find(function (x) { return x.id === id; });
+  const txt = document.getElementById("obs-txt-" + id).value.trim();
+  if (!txt) { return; }
+  const delta = document.getElementById("obs-delta-" + id).value;
+  c.observations.push({ date: today(), text: txt, delta: delta });
   openDetail(id);
 }
 
@@ -513,30 +453,29 @@ function saveObs(id) {
    ========================================= */
 
 function confirmDelete(id) {
-  const c = collabs.find(x => x.id === id);
-  document.getElementById('delete-modal-name').textContent = c.name;
-  document.getElementById('delete-modal-overlay').className = 'modal-overlay open';
-  document.getElementById('confirm-delete-btn').onclick = () => deleteCollab(id);
+  const c = collabs.find(function (x) { return x.id === id; });
+  document.getElementById("delete-modal-name").textContent = c.name;
+  document.getElementById("delete-modal-overlay").className = "modal-overlay open";
+  document.getElementById("confirm-delete-btn").onclick = function () { deleteCollab(id); };
 }
 
 function closeDeleteModal() {
-  document.getElementById('delete-modal-overlay').className = 'modal-overlay';
+  document.getElementById("delete-modal-overlay").className = "modal-overlay";
 }
 
 function deleteCollab(id) {
-  collabs = collabs.filter(x => x.id !== id);
+  collabs = collabs.filter(function (x) { return x.id !== id; });
   closeDeleteModal();
   if (activeId === id) {
     activeId = null;
-    document.getElementById('main-panel').innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">👥</div>
-        <h3>Selecione um colaborador</h3>
-        <p>Clique em um nome na lista ao lado para ver o perfil completo de performance e PDI.</p>
-      </div>
-    `;
+    document.getElementById("main-panel").innerHTML =
+      "<div class=\"empty-state\">" +
+        "<div class=\"empty-icon\">👥</div>" +
+        "<h3>Selecione um colaborador</h3>" +
+        "<p>Clique em um nome na lista ao lado para ver o perfil completo de performance e PDI.</p>" +
+      "</div>";
   }
-  renderList(document.getElementById('search-input').value);
+  renderList(document.getElementById("search-input").value);
   saveData();
 }
 
@@ -544,45 +483,65 @@ function deleteCollab(id) {
    MODAL — NOVO COLABORADOR
    ========================================= */
 
-function openModal()  { document.getElementById('modal-overlay').className = 'modal-overlay open'; }
-function closeModal() { document.getElementById('modal-overlay').className = 'modal-overlay'; }
+function openModal()  { document.getElementById("modal-overlay").className = "modal-overlay open"; }
+function closeModal() { document.getElementById("modal-overlay").className = "modal-overlay"; }
 
 function addCollab() {
-  const name    = document.getElementById('inp-name').value.trim();
-  if (!name) return;
-  const role    = document.getElementById('inp-role').value.trim();
-  const goal    = document.getElementById('inp-goal').value.trim();
-  const strong  = document.getElementById('inp-strong').value.trim();
-  const admDate = document.getElementById('inp-admission').value;
-  const metas   = parseInt(document.getElementById('inp-metas').value) || 0;
-  let admFormatted = '';
-  if (admDate) { const [y, m, d] = admDate.split('-'); admFormatted = `${d}/${m}/${y}`; }
+  const name    = document.getElementById("inp-name").value.trim();
+  if (!name) { return; }
+  const role    = document.getElementById("inp-role").value.trim();
+  const goal    = document.getElementById("inp-goal").value.trim();
+  const strong  = document.getElementById("inp-strong").value.trim();
+  const admDate = document.getElementById("inp-admission").value;
+  const metas   = parseInt(document.getElementById("inp-metas").value, 10) || 0;
+  let admFormatted = "";
+  if (admDate) {
+    const parts = admDate.split("-");
+    admFormatted = parts[2] + "/" + parts[1] + "/" + parts[0];
+  }
   collabs.push({
-    id: Date.now(), name, role: role || 'Colaborador',
-    initials: name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase(),
-    colorIdx: collabs.length, goal: goal || 'A definir', score: 50, admissionDate: admFormatted, metasBatidas: metas,
-    metrics: { maxAtt: '0', tma: '—', tme: '—', avgDay: '0' },
-    strong: strong ? strong.split(',').map(s => s.trim()).filter(Boolean) : [],
-    difficulties: { 'Não compreender o processo': false, 'Dificuldade em finalizar': false, 'Agilidade': false, 'Complexidade': false, 'Falta de treinamento': false },
-    improvements: { 'Finalizações': false, 'Tempo de resposta': false, 'Avaliações': false, 'Forma de atender': false, 'Qualidade de atendimento': false },
-    steps: [], stepsChecked: [], systemImprove: '',
-    behaviors: { 'Atrasos': false, 'Procedimento incorreto': false, 'Desmotivação aparente': false },
-    burnout: { 'Foco': 0, 'Entrega no prazo': 0, 'Volume de tarefas': 0 },
-    observations: [], weeks: {},
+    id: Date.now(),
+    name: name,
+    role: role || "Colaborador",
+    initials: name.split(" ").slice(0, 2).map(function (n) { return n[0]; }).join("").toUpperCase(),
+    colorIdx: collabs.length,
+    goal: goal || "A definir",
+    score: 50,
+    admissionDate: admFormatted,
+    metasBatidas: metas,
+    metrics: { maxAtt: "0", tma: "—", tme: "—", avgDay: "0" },
+    strong: strong ? strong.split(",").map(function (s) { return s.trim(); }).filter(Boolean) : [],
+    difficulties: {
+      "Não compreender o processo": false,
+      "Dificuldade em finalizar": false,
+      "Agilidade": false,
+      "Complexidade": false,
+      "Falta de treinamento": false
+    },
+    improvements: {
+      "Finalizações": false,
+      "Tempo de resposta": false,
+      "Avaliações": false,
+      "Forma de atender": false,
+      "Qualidade de atendimento": false
+    },
+    steps: [],
+    stepsChecked: [],
+    systemImprove: "",
+    behaviors: {
+      "Atrasos": false,
+      "Procedimento incorreto": false,
+      "Desmotivação aparente": false
+    },
+    burnout: { "Foco": 0, "Entrega no prazo": 0, "Volume de tarefas": 0 },
+    observations: []
   });
   closeModal();
-  ['inp-name','inp-role','inp-goal','inp-strong','inp-admission','inp-metas'].forEach(id => { document.getElementById(id).value = ''; });
+  ["inp-name", "inp-role", "inp-goal", "inp-strong", "inp-admission", "inp-metas"].forEach(function (elId) {
+    document.getElementById(elId).value = "";
+  });
   renderList();
   saveData();
-}
-
-
-/* =========================================
-   PERSISTÊNCIA
-   ========================================= */
-
-function saveData() {
-  try { localStorage.setItem('pdi_collabs', JSON.stringify(collabs)); } catch(e) {}
 }
 
 /* =========================================
@@ -590,38 +549,41 @@ function saveData() {
    ========================================= */
 
 function openEditModal(id) {
-  const c = collabs.find(x => x.id === id);
-  document.getElementById('edit-inp-name').value   = c.name;
-  document.getElementById('edit-inp-role').value   = c.role;
-  document.getElementById('edit-inp-goal').value   = c.goal;
-  document.getElementById('edit-inp-strong').value = (c.strong || []).join(', ');
-  document.getElementById('edit-inp-metas').value  = c.metasBatidas ?? 0;
+  const c = collabs.find(function (x) { return x.id === id; });
+  document.getElementById("edit-inp-name").value   = c.name;
+  document.getElementById("edit-inp-role").value   = c.role;
+  document.getElementById("edit-inp-goal").value   = c.goal;
+  document.getElementById("edit-inp-strong").value = (c.strong || []).join(", ");
+  document.getElementById("edit-inp-metas").value  = c.metasBatidas || 0;
   if (c.admissionDate) {
-    const [d, m, y] = c.admissionDate.split('/');
-    document.getElementById('edit-inp-admission').value = y + '-' + m + '-' + d;
+    const parts = c.admissionDate.split("/");
+    document.getElementById("edit-inp-admission").value = parts[2] + "-" + parts[1] + "-" + parts[0];
   } else {
-    document.getElementById('edit-inp-admission').value = '';
+    document.getElementById("edit-inp-admission").value = "";
   }
-  document.getElementById('edit-save-btn').onclick = () => saveEdit(id);
-  document.getElementById('edit-modal-overlay').className = 'modal-overlay open';
+  document.getElementById("edit-save-btn").onclick = function () { saveEdit(id); };
+  document.getElementById("edit-modal-overlay").className = "modal-overlay open";
 }
 
 function closeEditModal() {
-  document.getElementById('edit-modal-overlay').className = 'modal-overlay';
+  document.getElementById("edit-modal-overlay").className = "modal-overlay";
 }
 
 function saveEdit(id) {
-  const c    = collabs.find(x => x.id === id);
-  const name = document.getElementById('edit-inp-name').value.trim();
-  if (!name) return;
-  const admDate = document.getElementById('edit-inp-admission').value;
-  if (admDate) { const [y, m, d] = admDate.split('-'); c.admissionDate = d+'/'+m+'/'+y; }
+  const c    = collabs.find(function (x) { return x.id === id; });
+  const name = document.getElementById("edit-inp-name").value.trim();
+  if (!name) { return; }
+  const admDate = document.getElementById("edit-inp-admission").value;
+  if (admDate) {
+    const parts = admDate.split("-");
+    c.admissionDate = parts[2] + "/" + parts[1] + "/" + parts[0];
+  }
   c.name         = name;
-  c.role         = document.getElementById('edit-inp-role').value.trim() || c.role;
-  c.goal         = document.getElementById('edit-inp-goal').value.trim() || c.goal;
-  c.strong       = document.getElementById('edit-inp-strong').value.split(',').map(s => s.trim()).filter(Boolean);
-  c.metasBatidas = parseInt(document.getElementById('edit-inp-metas').value) || 0;
-  c.initials     = name.split(' ').slice(0,2).map(n => n[0]).join('').toUpperCase();
+  c.role         = document.getElementById("edit-inp-role").value.trim() || c.role;
+  c.goal         = document.getElementById("edit-inp-goal").value.trim() || c.goal;
+  c.strong       = document.getElementById("edit-inp-strong").value.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+  c.metasBatidas = parseInt(document.getElementById("edit-inp-metas").value, 10) || 0;
+  c.initials     = name.split(" ").slice(0, 2).map(function (n) { return n[0]; }).join("").toUpperCase();
   closeEditModal();
   saveData();
   openDetail(id);
@@ -631,8 +593,14 @@ function saveEdit(id) {
    INICIALIZAÇÃO
    ========================================= */
 
-document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
-document.getElementById('delete-modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
-document.getElementById('edit-modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
+document.getElementById("modal-overlay").addEventListener("click", function (e) {
+  if (e.target === this) { closeModal(); }
+});
+document.getElementById("delete-modal-overlay").addEventListener("click", function (e) {
+  if (e.target === this) { closeDeleteModal(); }
+});
+document.getElementById("edit-modal-overlay").addEventListener("click", function (e) {
+  if (e.target === this) { closeEditModal(); }
+});
 
 renderList();
