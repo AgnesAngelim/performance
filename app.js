@@ -348,7 +348,7 @@ function toggleCheck(id, i) {
   c.stepsChecked[i] = !c.stepsChecked[i];
   const done  = c.stepsChecked.filter(Boolean).length;
   const total = c.stepsChecked.length;
-  c.score = Math.min(100, Math.max(30, Math.round((done / Math.max(total, 1)) * 40 + 60)));
+  c.score = total === 0 ? 0 : Math.round((done / total) * 100);
   openDetail(id);
 }
 
@@ -506,7 +506,7 @@ function addCollab() {
     initials: name.split(" ").slice(0, 2).map(function (n) { return n[0]; }).join("").toUpperCase(),
     colorIdx: collabs.length,
     goal: goal || "A definir",
-    score: 50,
+    score: 0,
     admissionDate: admFormatted,
     metasBatidas: metas,
     metrics: { maxAtt: "0", tma: "—", tme: "—", avgDay: "0" },
