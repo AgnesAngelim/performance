@@ -110,6 +110,7 @@ function buildPanel(c) {
       buildBurnoutCard(c) +
     "</div>" +
     buildSystemCard(c) +
+    buildFeedbackCard(c) +
     buildObsCard(c);
 }
 
@@ -176,8 +177,9 @@ function buildMetrics(c) {
 
     "<div class=\"metric-box\"><div class=\"metric-lbl\">🔝 Csat</div>"+ 
     "<input class=\"metric-input\" value=\"" + (c.metrics.csat || "—") + "\" onchange=\"saveMetric(" + c.id + ",'csat',this.value)\" /></div>" +
-  "</div>";
+    "</div>"
 }
+
 
 function buildStrongCard(c) {
   const pills = c.strong.map(function (s) { return "<span class=\"strong-pill\">" + s + "</span>"; }).join("");
@@ -303,27 +305,73 @@ function buildSystemCard(c) {
   "</div>";
 }
 
-function buildObsCard(c) {
-  const entries = c.observations.slice().reverse().map(function (o) {
+function buildFeedbackCard(c) {
+  const items = (c.feedbacks || []).slice().reverse().map(function (o, ri) {
+    const i = (c.feedbacks.length - 1) - ri;
     const deltaClass = o.delta === "up" ? "d-up" : o.delta === "down" ? "d-down" : "d-same";
     const deltaLabel = o.delta === "up" ? "↑ Melhora" : o.delta === "down" ? "↓ Piora" : "→ Estável";
     return "<div class=\"obs-entry\">" +
-      "<div class=\"obs-meta\"><span class=\"obs-date\">" + o.date + "</span><span class=\"obs-delta " + deltaClass + "\">" + deltaLabel + "</span></div>" +
-      "<div class=\"obs-text-body\">" + o.text + "</div>" +
+      "<div class=\"obs-meta\">" +
+        "<span class=\"obs-date\">" + o.date + "</span>" +
+        "<span class=\"obs-delta " + deltaClass + "\">" + deltaLabel + "</span>" +
+        "<button class=\"obs-edit-btn\" onclick=\"editFeedback(" + c.id + "," + i + ")\">✏️</button>" +
+      "</div>" +
+      "<div class=\"obs-text-body\" id=\"fb-body-" + c.id + "-" + i + "\">" + o.text + "</div>" +
+      "<div class=\"obs-edit-row\" id=\"fb-edit-" + c.id + "-" + i + "\" style=\"display:none\">" +
+        "<textarea class=\"big-textarea\" id=\"fb-edit-txt-" + c.id + "-" + i + "\">" + o.text + "</textarea>" +
+        "<div class=\"obs-controls\">" +
+          "<select class=\"delta-select\" id=\"fb-edit-delta-" + c.id + "-" + i + "\">" +
+            "<option value=\"up\"" + (o.delta === "up" ? " selected" : "") + ">↑ Melhora</option>" +
+            "<option value=\"same\"" + (o.delta === "same" ? " selected" : "") + ">→ Estável</option>" +
+            "<option value=\"down\"" + (o.delta === "down" ? " selected" : "") + ">↓ Piora</option>" +
+          "</select>" +
+          "<button class=\"save-btn\" style=\"margin-left:8px\" onclick=\"saveFeedbackEdit(" + c.id + "," + i + ")\">Salvar</button>" +
+          "<button class=\"cancel-btn\" style=\"margin-left:6px\" onclick=\"cancelFeedbackEdit(" + c.id + "," + i + ")\">Cancelar</button>" +
+        "</div>" +
+      "</div>" +
     "</div>";
   }).join("");
-  return "<div class=\"section-card\" style=\"margin-bottom:32px\">" +
-    "<div class=\"section-title\">💬 Observações & Feedback</div>" +
-    "<div class=\"obs-list\">" + (entries || "<p style=\"font-size:12px;color:var(--text3)\">Nenhuma observação ainda.</p>") + "</div>" +
+  return "<div class=\"section-card\" style=\"margin-bottom:16px\">" +
+    "<div class=\"section-title\">💬 Feedback</div>" +
+    "<div class=\"obs-list\">" + (items || "<p style=\"font-size:12px;color:var(--text3)\">Nenhum feedback ainda.</p>") + "</div>" +
     "<hr class=\"divider\" />" +
-    "<textarea class=\"big-textarea\" id=\"obs-txt-" + c.id + "\" placeholder=\"Nova observação de feedback...\"></textarea>" +
+    "<textarea class=\"big-textarea\" id=\"fb-txt-" + c.id + "\" placeholder=\"Novo feedback...\"></textarea>" +
     "<div class=\"obs-controls\">" +
-      "<select class=\"delta-select\" id=\"obs-delta-" + c.id + "\">" +
+      "<select class=\"delta-select\" id=\"fb-delta-" + c.id + "\">" +
         "<option value=\"up\">↑ Melhora</option>" +
         "<option value=\"same\">→ Estável</option>" +
         "<option value=\"down\">↓ Piora</option>" +
       "</select>" +
-      "<button class=\"save-btn\" style=\"margin-left:auto\" onclick=\"saveObs(" + c.id + ")\">💾 Salvar Observação</button>" +
+      "<button class=\"save-btn\" style=\"margin-left:auto\" onclick=\"saveFeedback(" + c.id + ")\">💾 Salvar</button>" +
+    "</div>" +
+  "</div>";
+}
+
+function buildObsCard(c) {
+  const items = (c.observations || []).slice().reverse().map(function (o, ri) {
+    const i = (c.observations.length - 1) - ri;
+    return "<div class=\"obs-entry\">" +
+      "<div class=\"obs-meta\">" +
+        "<span class=\"obs-date\">" + o.date + "</span>" +
+        "<button class=\"obs-edit-btn\" onclick=\"editObs(" + c.id + "," + i + ")\">✏️</button>" +
+      "</div>" +
+      "<div class=\"obs-text-body\" id=\"obs-body-" + c.id + "-" + i + "\">" + o.text + "</div>" +
+      "<div class=\"obs-edit-row\" id=\"obs-edit-" + c.id + "-" + i + "\" style=\"display:none\">" +
+        "<textarea class=\"big-textarea\" id=\"obs-edit-txt-" + c.id + "-" + i + "\">" + o.text + "</textarea>" +
+        "<div class=\"obs-controls\">" +
+          "<button class=\"save-btn\" onclick=\"saveObsEdit(" + c.id + "," + i + ")\">Salvar</button>" +
+          "<button class=\"cancel-btn\" style=\"margin-left:6px\" onclick=\"cancelObsEdit(" + c.id + "," + i + ")\">Cancelar</button>" +
+        "</div>" +
+      "</div>" +
+    "</div>";
+  }).join("");
+  return "<div class=\"section-card\" style=\"margin-bottom:32px\">" +
+    "<div class=\"section-title\">📝 Observações</div>" +
+    "<div class=\"obs-list\">" + (items || "<p style=\"font-size:12px;color:var(--text3)\">Nenhuma observação ainda.</p>") + "</div>" +
+    "<hr class=\"divider\" />" +
+    "<textarea class=\"big-textarea\" id=\"obs-txt-" + c.id + "\" placeholder=\"Nova observação...\"></textarea>" +
+    "<div class=\"obs-controls\">" +
+      "<button class=\"save-btn\" style=\"margin-left:auto\" onclick=\"saveObs(" + c.id + ")\">💾 Salvar</button>" +
     "</div>" +
   "</div>";
 }
@@ -442,12 +490,59 @@ function addBurnout(id, inputId) {
    AÇÕES — OBSERVAÇÕES
    ========================================= */
 
+function saveFeedback(id) {
+  const c   = collabs.find(function (x) { return x.id === id; });
+  const txt = document.getElementById("fb-txt-" + id).value.trim();
+  if (!txt) { return; }
+  if (!c.feedbacks) { c.feedbacks = []; }
+  const delta = document.getElementById("fb-delta-" + id).value;
+  c.feedbacks.push({ date: today(), text: txt, delta: delta });
+  openDetail(id);
+}
+
+function editFeedback(id, i) {
+  document.getElementById("fb-body-" + id + "-" + i).style.display = "none";
+  document.getElementById("fb-edit-" + id + "-" + i).style.display = "block";
+}
+
+function cancelFeedbackEdit(id, i) {
+  document.getElementById("fb-body-" + id + "-" + i).style.display = "block";
+  document.getElementById("fb-edit-" + id + "-" + i).style.display = "none";
+}
+
+function saveFeedbackEdit(id, i) {
+  const c   = collabs.find(function (x) { return x.id === id; });
+  const txt = document.getElementById("fb-edit-txt-" + id + "-" + i).value.trim();
+  if (!txt) { return; }
+  c.feedbacks[i].text  = txt;
+  c.feedbacks[i].delta = document.getElementById("fb-edit-delta-" + id + "-" + i).value;
+  openDetail(id);
+}
+
 function saveObs(id) {
   const c   = collabs.find(function (x) { return x.id === id; });
   const txt = document.getElementById("obs-txt-" + id).value.trim();
   if (!txt) { return; }
-  const delta = document.getElementById("obs-delta-" + id).value;
-  c.observations.push({ date: today(), text: txt, delta: delta });
+  if (!c.observations) { c.observations = []; }
+  c.observations.push({ date: today(), text: txt });
+  openDetail(id);
+}
+
+function editObs(id, i) {
+  document.getElementById("obs-body-" + id + "-" + i).style.display = "none";
+  document.getElementById("obs-edit-" + id + "-" + i).style.display = "block";
+}
+
+function cancelObsEdit(id, i) {
+  document.getElementById("obs-body-" + id + "-" + i).style.display = "block";
+  document.getElementById("obs-edit-" + id + "-" + i).style.display = "none";
+}
+
+function saveObsEdit(id, i) {
+  const c   = collabs.find(function (x) { return x.id === id; });
+  const txt = document.getElementById("obs-edit-txt-" + id + "-" + i).value.trim();
+  if (!txt) { return; }
+  c.observations[i].text = txt;
   openDetail(id);
 }
 
@@ -537,7 +632,8 @@ function addCollab() {
       "Desmotivação aparente": false
     },
     burnout: { "Foco": 0, "Entrega no prazo": 0, "Volume de tarefas": 0 },
-    observations: []
+    observations: [],
+    feedbacks: []
   });
   closeModal();
   ["inp-name", "inp-role", "inp-goal", "inp-strong", "inp-admission", "inp-metas"].forEach(function (elId) {
