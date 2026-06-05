@@ -173,6 +173,9 @@ function buildMetrics(c) {
 
     "<div class=\"metric-box\"><div class=\"metric-lbl\">Qualidade</div>" +
     "<input class=\"metric-input\" value=\"" + q + "\" onchange=\"saveMetric(" + c.id + ",'quality',this.value)\" /></div>" +
+
+    "<div class=\"metric-box\"><div class=\"metric-lbl\">🔝 Csat</div>"+ 
+    "<input class=\"metric-input\" value=\"" + (c.metrics.csat || "—") + "\" onchange=\"saveMetric(" + c.id + ",'csat',this.value)\" /></div>" +
   "</div>";
 }
 
