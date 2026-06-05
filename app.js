@@ -111,7 +111,8 @@ function buildPanel(c) {
     "</div>" +
     buildSystemCard(c) +
     buildFeedbackCard(c) +
-    buildObsCard(c);
+    buildObsCard(c) +
+    "<div class=\"save-report-bar\"><button class=\"save-report-btn-lg\" onclick=\"saveReport(" + c.id + ")\">💾 Salvar Relatório</button></div>";
 }
 
 function buildHeader(c, cl) {
@@ -134,7 +135,7 @@ function buildHeader(c, cl) {
       "<div class=\"panel-role-txt\">" + c.role + "</div>" +
       "<div class=\"panel-admission\"><span class=\"adm-chip\">📅 Admissão: <strong>" + admStr + "</strong>" + tenureHtml + "</span></div>" +
     "</div>" +
-    "<div class=\"header-stats\">" +
+    "<div class=\"header-btn-group\">" +
       "<div class=\"score-display\">" +
         "<div class=\"score-number\" style=\"color:" + scoreColor(c.score) + "\">" + c.score + "%</div>" +
         "<div class=\"score-label\">" + scoreLabel(c.score) + "</div>" +
@@ -143,13 +144,14 @@ function buildHeader(c, cl) {
         "<div class=\"metas-number\">" + (c.metasBatidas || 0) + "</div>" +
         "<div class=\"metas-label\">metas batidas</div>" +
       "</div>" +
+      "<button class=\"edit-panel-btn\" onclick=\"openEditModal(" + c.id + ")\">✏️ Editar</button>" +
+      "<button class=\"delete-panel-btn\" onclick=\"confirmDelete(" + c.id + ")\">" +
+        "<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\">" +
+        "<polyline points=\"3 6 5 6 21 6\"/><path d=\"M19 6l-1 14H6L5 6\"/><path d=\"M10 11v6\"/><path d=\"M14 11v6\"/><path d=\"M9 6V4h6v2\"/>" +
+        "</svg> Excluir" +
+      "</button>" +
+      "<button class=\"history-btn\" onclick=\"openHistory(" + c.id + ")\">📋 Histórico</button>" +
     "</div>" +
-    "<button class=\"edit-panel-btn\" onclick=\"openEditModal(" + c.id + ")\">✏️ Editar</button>" +
-    "<button class=\"delete-panel-btn\" onclick=\"confirmDelete(" + c.id + ")\">" +
-      "<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\">" +
-      "<polyline points=\"3 6 5 6 21 6\"/><path d=\"M19 6l-1 14H6L5 6\"/><path d=\"M10 11v6\"/><path d=\"M14 11v6\"/><path d=\"M9 6V4h6v2\"/>" +
-      "</svg> Excluir" +
-    "</button>" +
   "</div>";
 }
 
@@ -633,7 +635,8 @@ function addCollab() {
     },
     burnout: { "Foco": 0, "Entrega no prazo": 0, "Volume de tarefas": 0 },
     observations: [],
-    feedbacks: []
+    feedbacks: [],
+    reports: []
   });
   closeModal();
   ["inp-name", "inp-role", "inp-goal", "inp-strong", "inp-admission", "inp-metas"].forEach(function (elId) {
@@ -686,6 +689,51 @@ function saveEdit(id) {
   closeEditModal();
   saveData();
   openDetail(id);
+}
+
+/* =========================================
+   RELATÓRIOS / HISTÓRICO
+   ========================================= */
+
+function saveReport(id) {
+  var c = collabs.find(function (x) { return x.id === id; });
+  if (!c.reports) { c.reports = []; }
+  var now = new Date();
+  var ds = String(now.getDate()).padStart(2,"0")+"/"+String(now.getMonth()+1).padStart(2,"0")+"/"+now.getFullYear();
+  var ts = String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
+  c.reports.push({ date:ds, time:ts, score:c.score,
+    steps:JSON.parse(JSON.stringify(c.steps)), stepsChecked:JSON.parse(JSON.stringify(c.stepsChecked)),
+    difficulties:JSON.parse(JSON.stringify(c.difficulties)), improvements:JSON.parse(JSON.stringify(c.improvements)),
+    behaviors:JSON.parse(JSON.stringify(c.behaviors)), burnout:JSON.parse(JSON.stringify(c.burnout)),
+    systemImprove:c.systemImprove||"", feedbacks:JSON.parse(JSON.stringify(c.feedbacks||[])), observations:JSON.parse(JSON.stringify(c.observations||[]))
+  });
+  saveData();
+  showToast("Relatório salvo!");
+}
+function showToast(msg) {
+  var t = document.getElementById("toast-msg"); if(!t){return;}
+  t.textContent = msg; t.className = "toast show";
+  setTimeout(function(){t.className="toast";},2800);
+}
+function openHistory(id) {
+  var c = collabs.find(function(x){return x.id===id;});
+  var main = document.getElementById("main-panel");
+  if(!c.reports||!c.reports.length){showToast("Nenhum relatório salvo ainda.");return;}
+  var list = c.reports.slice().reverse().map(function(r,ri){
+    var i = c.reports.length-1-ri;
+    return "<div class=\"report-item\" onclick=\"openReportDetail("+id+","+i+")\"><div class=\"report-item-date\">📋 "+r.date+" às "+r.time+"</div><div class=\"report-item-score\" style=\"color:"+scoreColor(r.score)+"\">"+r.score+"%</div></div>";
+  }).join("");
+  main.innerHTML = "<div class=\"panel-content slide-in\"><div class=\"history-header\"><button class=\"back-btn\" onclick=\"openDetail("+id+")\">← Voltar</button><div class=\"history-title\">📋 Histórico — "+c.name+"</div></div><div class=\"report-list\">"+list+"</div></div>";
+}
+function openReportDetail(id,i) {
+  var c=collabs.find(function(x){return x.id===id;}); var r=c.reports[i];
+  var main=document.getElementById("main-panel");
+  function tl(obj,cls){return Object.keys(obj).map(function(k){return "<span class=\"tag "+(obj[k]?cls:"")+"\">"+( obj[k]?"● ":"")+k+"</span>";}).join("")||"<span style=\"color:var(--text3);font-size:12px\">Nenhum</span>";}
+  function bl(obj){return Object.keys(obj).map(function(k){return "<div class=\"behavior-row "+(obj[k]?"flagged":"")+"\"><div class=\"behavior-dot\"></div>"+k+"</div>";}).join("")||"<span style=\"color:var(--text3);font-size:12px\">Nenhum</span>";}
+  function bul(obj){return Object.keys(obj).map(function(k){var l=obj[k];var d=[1,2,3].map(function(d){return "<div class=\"b-dot l"+d+(d<=l?" on":"")+"\"></div>";}).join("");return "<div class=\"burnout-row\"><span class=\"burnout-lbl\">"+k+"</span><div class=\"burnout-dots\">"+d+"</div></div>";}).join("")||"<span style=\"color:var(--text3);font-size:12px\">Nenhum</span>";}
+  function sl(s,ch){if(!s||!s.length){return "<span style=\"color:var(--text3);font-size:12px\">Nenhum passo</span>";}return s.map(function(x,idx){var done=ch[idx]?"done":"";return "<div class=\"check-row\"><div class=\"check-box "+done+"\"><svg viewBox=\"0 0 12 12\"><polyline points=\"1.5,6 4.5,9 10.5,3\"/></svg></div><span class=\"check-lbl "+done+"\">"+x+"</span></div>";}).join("");}
+  function ol(arr){if(!arr||!arr.length){return "<p style=\"font-size:12px;color:var(--text3)\">Nenhum</p>";}return arr.map(function(o){var dc=o.delta==="up"?"d-up":o.delta==="down"?"d-down":"d-same";var dl=o.delta==="up"?"↑ Melhora":o.delta==="down"?"↓ Piora":"→ Estável";return "<div class=\"obs-entry\"><div class=\"obs-meta\"><span class=\"obs-date\">"+o.date+"</span>"+(o.delta?"<span class=\"obs-delta "+dc+"\">"+dl+"</span>":"")+"</div><div class=\"obs-text-body\">"+o.text+"</div></div>";}).join("");}
+  main.innerHTML="<div class=\"panel-content slide-in\"><div class=\"history-header\"><button class=\"back-btn\" onclick=\"openHistory("+id+")\">← Voltar</button><div class=\"history-title\">📋 Relatório de "+r.date+" às "+r.time+"</div><div class=\"report-score\" style=\"color:"+scoreColor(r.score)+"\">"+r.score+"%</div></div><div class=\"sections-grid\"><div class=\"section-card full\"><div class=\"section-title\">✅ Passos</div><div class=\"check-list\">"+sl(r.steps,r.stepsChecked)+"</div></div></div><div class=\"sections-grid\"><div class=\"section-card\"><div class=\"section-title\">⚠️ Dificuldades</div><div class=\"tags-wrap\">"+tl(r.difficulties,"t-bad")+"</div></div><div class=\"section-card\"><div class=\"section-title\">📈 Pontos de melhoria</div><div class=\"tags-wrap\">"+tl(r.improvements,"t-good")+"</div></div></div><div class=\"sections-grid\"><div class=\"section-card\"><div class=\"section-title\">🚨 Comportamento</div><div class=\"behavior-list\">"+bl(r.behaviors)+"</div></div><div class=\"section-card\"><div class=\"section-title\">📊 Produtividade</div><div class=\"burnout-table\">"+bul(r.burnout)+"</div></div></div><div class=\"section-card\" style=\"margin-bottom:16px\"><div class=\"section-title\">⚙️ Melhorias Sistêmicas</div><p class=\"report-text\">"+(r.systemImprove||"—")+"</p></div><div class=\"section-card\" style=\"margin-bottom:16px\"><div class=\"section-title\">💬 Feedback</div>"+ol(r.feedbacks)+"</div><div class=\"section-card\" style=\"margin-bottom:32px\"><div class=\"section-title\">📝 Observações</div>"+ol(r.observations)+"</div></div>";
 }
 
 /* =========================================
