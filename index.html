@@ -6,9 +6,96 @@
   <title>Ranking de Performance</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐋</text></svg>">
   <link rel="stylesheet" href="style.css" />
+  <!-- Firebase SDKs (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <style>
+    /* ── Tela de login ── */
+    #login-screen {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg, #0f1117);
+      z-index: 9999;
+    }
+    .login-box {
+      background: var(--surface, #1a1d27);
+      border: 1px solid var(--border, #2a2d3a);
+      border-radius: 16px;
+      padding: 40px 36px 32px;
+      width: 340px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .login-logo { font-size: 32px; text-align: center; margin-bottom: 4px; }
+    .login-title {
+      text-align: center;
+      font-size: 18px; font-weight: 700;
+      color: var(--text, #e8eaf0);
+      margin-bottom: 8px;
+    }
+    .login-box label {
+      font-size: 12px; font-weight: 600;
+      color: var(--text3, #6b7280);
+      text-transform: uppercase; letter-spacing: .05em;
+      margin-bottom: 4px; display: block;
+    }
+    .login-box input {
+      width: 100%; box-sizing: border-box;
+      background: var(--input-bg, #12141c);
+      border: 1px solid var(--border, #2a2d3a);
+      border-radius: 8px;
+      color: var(--text, #e8eaf0);
+      font-size: 14px; padding: 10px 12px;
+      outline: none;
+    }
+    .login-box input:focus { border-color: var(--accent, #4f8ef7); }
+    .login-btn {
+      margin-top: 4px;
+      background: var(--accent, #4f8ef7);
+      color: #fff; font-weight: 700;
+      border: none; border-radius: 8px;
+      padding: 11px; cursor: pointer;
+      font-size: 14px; transition: opacity .15s;
+    }
+    .login-btn:hover { opacity: .88; }
+    .login-error {
+      color: #f4564e; font-size: 12px;
+      text-align: center; min-height: 16px;
+    }
+    /* Botão de logout no header da sidebar */
+    .logout-btn {
+      background: none; border: 1px solid var(--border, #2a2d3a);
+      color: var(--text3, #6b7280);
+      border-radius: 6px; padding: 4px 10px;
+      font-size: 11px; cursor: pointer;
+      transition: all .15s; margin-top: 6px;
+    }
+    .logout-btn:hover { border-color: #f4564e; color: #f4564e; }
+    #app-wrapper { display: none; }
+  </style>
 </head>
 <body>
 
+<!-- TELA DE LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🐋</div>
+    <div class="login-title">Performance</div>
+    <div>
+      <label for="login-email">E-mail</label>
+      <input id="login-email" type="email" placeholder="seu@email.com" onkeydown="loginKeydown(event)" />
+    </div>
+    <div>
+      <label for="login-pass">Senha</label>
+      <input id="login-pass" type="password" placeholder="••••••••" onkeydown="loginKeydown(event)" />
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP PRINCIPAL (oculto até autenticar) -->
+<div id="app-wrapper">
 <div class="app">
 
   <!-- SIDEBAR -->
@@ -19,6 +106,9 @@
       <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">
         <span></span><span></span><span></span>
       </button>
+    </div>
+    <div style="padding: 0 16px 8px">
+      <button class="logout-btn" onclick="doLogout()">⎋ Sair</button>
     </div>
     <div class="sidebar-search">
       <input
@@ -48,12 +138,12 @@
   </main>
 
 </div>
+</div>
 
 <!-- MODAL — Novo Colaborador -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal-box">
     <div class="modal-title">Novo Colaborador</div>
-
     <div class="field">
       <label for="inp-name">Nome completo</label>
       <input id="inp-name" placeholder="Ex: Ana Paula Silva" />
@@ -80,7 +170,6 @@
         <input id="inp-metas" type="number" min="0" placeholder="Ex: 12" />
       </div>
     </div>
-
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeModal()">Cancelar</button>
       <button class="save-btn" onclick="addCollab()">Adicionar</button>
@@ -103,12 +192,10 @@
   </div>
 </div>
 
-
 <!-- MODAL — Editar Colaborador -->
 <div class="modal-overlay" id="edit-modal-overlay">
   <div class="modal-box">
     <div class="modal-title">✏️ Editar Colaborador</div>
-
     <div class="field">
       <label for="edit-inp-name">Nome completo</label>
       <input id="edit-inp-name" placeholder="Ex: Ana Paula Silva" />
@@ -135,7 +222,6 @@
         <input id="edit-inp-metas" type="number" min="0" placeholder="Ex: 12" />
       </div>
     </div>
-
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeEditModal()">Cancelar</button>
       <button class="save-btn" id="edit-save-btn">Salvar</button>
@@ -149,7 +235,6 @@
   function toggleSidebar() {
     document.querySelector('.sidebar').classList.toggle('collapsed');
   }
-  // Auto-collapse sidebar when a collab is selected on mobile
   const _origOpenDetail = openDetail;
   openDetail = function(id) {
     _origOpenDetail(id);
